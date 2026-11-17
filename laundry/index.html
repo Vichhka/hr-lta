@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B3466">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hello Laundry">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<title>Hello Laundry</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+  :root{--navy:#0B3466;--navy2:#0E4A8A;--gold:#1E9BF0;--gold2:#7FD3FF;--in:#1E9E5A;--out:#E07A1F;--bg:#F3F5F8;--card:#fff;--ink:#17202B;--mute:#6B7685;--line:#E2E6EC;--bad:#C83A3A;--ok:#1E9E5A}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Lao","Lao Sangam MN","Phetsarath OT",sans-serif}
+  button{font:inherit;cursor:pointer}
+  .top{background:var(--navy);color:#fff;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.5px;font-size:18px;white-space:nowrap}
+  .brand img{height:34px;width:auto}.brand b{color:var(--gold2)}
+  .top .tools{display:flex;gap:6px}
+  .top button{background:transparent;color:#cfd8e6;border:1px solid #3a5278;border-radius:8px;padding:6px 10px;font-size:13px}
+  main{max-width:560px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+  input,select,textarea{width:100%;font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  textarea{min-height:70px;resize:vertical}
+  .btn{width:100%;border:0;border-radius:12px;padding:14px;font-weight:700;font-size:17px;background:var(--navy);color:#fff;margin-top:16px}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+  .btn:disabled{opacity:.5}
+  .err{color:var(--bad);font-size:14px;margin-top:10px;min-height:1em}
+  .okmsg{color:var(--ok);font-size:14px;margin-top:10px}
+  .loginlogo{display:block;width:210px;max-width:70%;margin:6px auto 14px}
+  .hello{font-size:14px;color:var(--mute)}.who{font-size:22px;font-weight:800}
+  .clock{font-size:42px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .date{color:var(--mute)}
+  .punch{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .punch button{border:0;border-radius:16px;padding:24px 10px;color:#fff;font-weight:800;font-size:21px}
+  .punch .in{background:var(--in)}.punch .out{background:var(--out)}
+  .punch small{display:block;font-weight:500;font-size:12px;opacity:.9;margin-top:4px}
+  .linkbtn{display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px;text-align:left;color:var(--ink)}
+  .linkbtn b{display:block}.linkbtn span{font-size:13px;color:var(--mute)}.linkbtn i{font-style:normal;font-size:20px;color:var(--mute)}
+  .linkbtn.sup{background:#FFF8E6;border-color:#F0D9A0}
+  .badge{display:inline-block;min-width:22px;padding:1px 7px;border-radius:20px;background:var(--bad);color:#fff;font-size:12px;font-weight:700;text-align:center;margin-left:6px}
+  .last{margin-top:12px;font-size:14px;color:var(--mute);text-align:center}
+  h3{margin:0 0 10px;font-size:15px}
+  .hist{list-style:none;margin:0;padding:0}
+  .hist li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .hist li:last-child{border-bottom:0}
+  .tag{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff;white-space:nowrap}
+  .tag.IN{background:var(--in)}.tag.OUT{background:var(--out)}
+  .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .pill.PENDING{background:#FFF1CC;color:#8a6400}.pill.APPROVED,.pill.OK{background:#DDF3E6;color:#11693b}.pill.REJECTED,.pill.FLAG{background:#FBE0E0;color:#a12a2a}
+  .pill.MANUAL{background:#E7ECF5;color:#3c4a63}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .seg.v{grid-template-columns:1fr}
+  .seg label{margin:0}
+  .seg input{display:none}
+  .seg span{display:block;text-align:center;padding:11px 6px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:15px;color:var(--ink)}
+  .seg input:checked+span{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+  /* camera overlay */
+  .ov{position:fixed;inset:0;background:#000;color:#fff;display:none;flex-direction:column;z-index:10}
+  .ov.on{display:flex}
+  .ov header{padding:16px;padding-top:calc(16px + env(safe-area-inset-top));text-align:center}
+  .ov header .step{font-size:12px;opacity:.7;letter-spacing:1px}
+  .ov header .msg{font-size:20px;font-weight:700;margin-top:4px}
+  .stage{flex:1;position:relative;overflow:hidden}
+  .stage video{width:100%;height:100%;object-fit:cover}
+  .stage video.mirror{transform:scaleX(-1)}
+  .frame{position:absolute;left:50%;top:50%;width:64vmin;height:64vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+  .frame.face{border-radius:50%;width:62vmin;height:78vmin}
+  .count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:96px;font-weight:800;text-shadow:0 2px 12px #000}
+  .ov footer{padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .ov footer button{width:100%;background:#333;color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px}
+  .result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+  .result .big{font-size:64px}.result .t{font-size:26px;font-weight:800;margin-top:8px}.result .s{opacity:.8;margin-top:6px}
+  /* kiosk */
+  .kiosk{min-height:100vh;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px}
+  .kiosk .klogo{height:min(14vh,120px);background:#fff;border-radius:16px;padding:8px 16px}
+  .kiosk .qr{background:#fff;padding:16px;border-radius:20px;margin:14px 0}
+  .kiosk .qr svg{display:block;width:min(56vh,80vw);height:min(56vh,80vw)}
+  .kiosk .k1{font-size:clamp(20px,3.4vw,36px);font-weight:800;line-height:1.25}
+  .kiosk .k1 small{display:block;font-size:.72em;font-weight:600;color:var(--gold2)}
+  .kiosk .k2{opacity:.8;font-size:clamp(13px,1.8vw,18px)}
+  .bar{width:min(56vh,80vw);height:6px;background:#2e4670;border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--gold);transition:width 1s linear}
+  /* review / admin */
+  .wide{max-width:1100px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  .row>div{flex:1;min-width:140px}
+  .row .btn{margin-top:0;width:auto;padding:12px 18px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat b{display:block;font-size:26px}.stat span{font-size:12px;color:var(--mute)}
+  .scan{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .scan:last-child{border-bottom:0}
+  .scan.FLAG{background:#FDF1F1;margin:0 -10px;padding:10px}
+  .scan .info{flex:1;min-width:0}
+  .scan .info b{font-size:15px}.scan .info div{font-size:13px;color:var(--mute)}
+  .thumb{width:58px;height:58px;border-radius:10px;object-fit:cover;background:#e9edf2;display:block;cursor:pointer;flex:none}
+  .thumb.none{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--mute);cursor:default}
+  .pair{display:flex;gap:6px;flex:none}
+  .pair figure{margin:0;text-align:center}
+  .pair figcaption{font-size:10px;color:var(--mute);margin-top:2px}
+  .refcard{background:#FFF8E6;border:1px solid #F0D9A0;border-radius:14px;padding:16px;margin-bottom:14px;text-align:center}
+  .refcard b{display:block;font-size:17px}.refcard p{margin:6px 0 0;font-size:14px;color:var(--mute)}
+  .acts{display:flex;gap:6px;flex:none}
+  .acts button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600}
+  .acts .y{color:var(--ok)}.acts .n{color:var(--bad)}
+  .acts .y.on{background:var(--ok);color:#fff;border-color:var(--ok)}.acts .n.on{background:var(--bad);color:#fff;border-color:var(--bad)}
+  .req{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+  .req .h{display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .req .d{font-size:14px;color:var(--mute);margin-top:4px}
+  .req .acts{margin-top:10px}.req .acts button{flex:1;padding:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:#FDF3E1;border:1px solid #F2D8A7;border-radius:20px;padding:5px 12px;font-size:14px;color:var(--ink)}
+  button.chip{cursor:pointer}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td{padding:8px;border-bottom:1px solid var(--line)}
+  .big-img{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:20}
+  .big-img.on{display:flex}.big-img img{max-width:92vw;max-height:88vh;border-radius:12px}
+  .muted{color:var(--mute);font-size:13px}
+  .copy{display:flex;gap:8px}.copy input{font-size:13px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:820px){.cols{grid-template-columns:1fr}}
+  @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.hide-sm{display:none}.scan{flex-wrap:wrap}.scan .acts{width:100%;padding-left:0}.scan .acts button{flex:1}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="ov" id="ov">
+  <header><div class="step" id="ovStep"></div><div class="msg" id="ovMsg"></div></header>
+  <div class="stage" id="stage">
+    <video id="vid" playsinline muted autoplay></video>
+    <div class="frame" id="frame"></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="result" id="result" style="display:none"></div>
+  <footer><button id="ovClose"></button></footer>
+</div>
+<div class="big-img" id="bigImg"><img alt=""></div>
+<canvas id="cv" hidden></canvas>
+
+<script>
+/* ======================= CONFIG ======================= */
+/* Paste the Web app URL from Apps Script (Deploy > Manage deployments) here: */
+const API_URL = 'https://script.google.com/macros/s/AKfycbwPaZipS4NRIsoLGqqB8Vmt870p5_f85uHrgtHeDInI1qBBPDkwX3JjMnxhlv2PjMen/exec';
+/* ====================================================== */
+
+const LOGO = 'data:image/png;base64,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';
+const STAR = 'data:image/png;base64,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';
+
+/* ---------------- language ---------------- */
+const TXT = {
+  appSub:['Staff check-in','ລົງເວລາພະນັກງານ'],
+  staffLogin:['Staff login','ເຂົ້າສູ່ລະບົບພະນັກງານ'],
+  loginOnce:['Log in once on your own phone.','ເຂົ້າສູ່ລະບົບຄັ້ງດຽວ ໃນໂທລະສັບຂອງທ່ານເອງ.'],
+  staffId:['Staff ID','ລະຫັດພະນັກງານ'], pin:['PIN','ລະຫັດຜ່ານ (PIN)'],
+  login:['Log in','ເຂົ້າສູ່ລະບົບ'], logout:['Log out','ອອກຈາກລະບົບ'],
+  logoutQ:['Log out of Hello Laundry on this phone?','ອອກຈາກລະບົບ Hello Laundry ໃນໂທລະສັບນີ້ບໍ?'],
+  thisPhoneOnly:['Your account will work on this phone only.','ບັນຊີຂອງທ່ານຈະໃຊ້ໄດ້ໃນໂທລະສັບເຄື່ອງນີ້ເທົ່ານັ້ນ.'],
+  enterBoth:['Enter your staff ID and PIN.','ກະລຸນາປ້ອນລະຫັດພະນັກງານ ແລະ PIN.'],
+  hello:['Hello','ສະບາຍດີ'],
+  checkIn:['CHECK IN','ເຂົ້າວຽກ'], checkOut:['CHECK OUT','ອອກວຽກ'],
+  startShift:['Start shift','ເລີ່ມກະ'], endShift:['End shift','ເລີກກະ'],
+  wIN:['Check in','ເຂົ້າວຽກ'], wOUT:['Check out','ອອກວຽກ'],
+  last:['Last','ຫຼ້າສຸດ'], at:['at','ເວລາ'],
+  noneMonth:['No check-ins this month yet.','ເດືອນນີ້ຍັງບໍ່ມີການລົງເວລາ.'],
+  thisMonth:['This month','ເດືອນນີ້'], nothing:['Nothing yet','ຍັງບໍ່ມີ'],
+  manual:['manual','ແກ້ໄຂ'],
+  forgot:['Forgot to scan?','ລືມສະແກນ?'], forgotSub:['Send a request to your supervisor','ສົ່ງຄຳຮ້ອງໃຫ້ຫົວໜ້າ'],
+  forgotTitle:['Forgot to scan','ລືມສະແກນ'],
+  date:['Date','ວັນທີ'], shift:['Shift','ກະ'],
+  shiftD:['Day 08:00–20:00','ກະວຽກ 08:00–20:00'],
+  shD:['Day','ກະວຽກ'],
+  missingQ:['What did you forget to scan?','ລືມສະແກນຫຍັງ?'],
+  mIN:['Check in','ເຂົ້າວຽກ'], mOUT:['Check out','ອອກວຽກ'], mBOTH:['Both','ທັງສອງ'],
+  reason:['Reason','ເຫດຜົນ'], reasonPh:['e.g. phone battery was dead','ຕົວຢ່າງ: ໂທລະສັບໝົດແບັດ'],
+  send:['Send to supervisor','ສົ່ງໃຫ້ຫົວໜ້າ'], back:['Back','ກັບຄືນ'],
+  sent:['Request sent. Your supervisor will check it.','ສົ່ງຄຳຮ້ອງແລ້ວ. ຫົວໜ້າຈະກວດສອບ.'],
+  myReq:['My requests','ຄຳຮ້ອງຂອງຂ້ອຍ'],
+  PENDING:['Waiting','ລໍຖ້າ'], APPROVED:['Approved','ອະນຸມັດແລ້ວ'], REJECTED:['Rejected','ບໍ່ອະນຸມັດ'],
+  supBtn:['Supervisor: verify & approve','ຫົວໜ້າ: ກວດສອບ ແລະ ອະນຸມັດ'],
+  adminBtn:['Admin: manage everything','ແອດມິນ: ຈັດການທັງໝົດ'],
+  adminSub:['Approve, add missed scans, download, settings','ອະນຸມັດ, ເພີ່ມການສະແກນ, ດາວໂຫຼດ, ຕັ້ງຄ່າ'],
+  supSub:['Verify scans and add missed scans','ກວດສອບການສະແກນ ແລະ ເພີ່ມການສະແກນທີ່ລືມ'],
+  step1:['STEP 1 OF 2','ຂັ້ນຕອນ 1/2'], step2:['STEP 2 OF 2','ຂັ້ນຕອນ 2/2'],
+  scanQr:['Scan the QR code at the entrance','ສະແກນ QR ທີ່ປະຕູທາງເຂົ້າ'],
+  selfie:['Selfie — look at the camera','ຖ່າຍເຊວຟີ — ເບິ່ງກ້ອງ'],
+  sending:['Sending…','ກຳລັງສົ່ງ…'], notSaved:['Not saved','ບໍ່ສຳເລັດ'],
+  cancel:['Cancel','ຍົກເລີກ'], done:['Done','ສຳເລັດ'], close:['Close','ປິດ'], wait:['Please wait','ກະລຸນາລໍຖ້າ'],
+  noCam:['Camera not available','ບໍ່ສາມາດໃຊ້ກ້ອງໄດ້'],
+  noCamSub:['Open this app in Chrome (Android) or Safari (iPhone).','ກະລຸນາເປີດແອັບໃນ Chrome (Android) ຫຼື Safari (iPhone).'],
+  allowCam:['Allow camera access for this site in your browser settings, then try again.','ກະລຸນາອະນຸຍາດໃຫ້ໃຊ້ກ້ອງ ໃນການຕັ້ງຄ່າບຣາວເຊີ ແລ້ວລອງໃໝ່.'],
+  noQr:['No QR code found. Try again at the entrance screen.','ບໍ່ພົບ QR. ກະລຸນາລອງໃໝ່ທີ່ໜ້າຈໍປະຕູທາງເຂົ້າ.'],
+  review:['Verify & approve','ກວດສອບ ແລະ ອະນຸມັດ'],
+  pendingReq:['Forgot-scan requests','ຄຳຮ້ອງລືມສະແກນ'], noPending:['No requests waiting.','ບໍ່ມີຄຳຮ້ອງລໍຖ້າ.'],
+  approve:['Approve','ອະນຸມັດ'], reject:['Reject','ບໍ່ອະນຸມັດ'],
+  rejectQ:['Reject this request?','ບໍ່ອະນຸມັດຄຳຮ້ອງນີ້ບໍ?'],
+  addFor:['Add a missed scan for staff','ເພີ່ມການສະແກນໃຫ້ພະນັກງານ'],
+  addForSub:['For staff who forgot to scan. It is saved and approved at once.','ສຳລັບພະນັກງານທີ່ລືມສະແກນ. ຈະບັນທຶກ ແລະ ອະນຸມັດທັນທີ.'],
+  noScanHint:['Staff with no scan on this day (includes OFF / leave). Tap a name to add a missed scan.','ພະນັກງານທີ່ບໍ່ໄດ້ສະແກນມື້ນີ້ (ລວມ OFF / ລາພັກ). ແຕະຊື່ເພື່ອເພີ່ມການສະແກນ.'],
+  allScanned:['Everyone scanned.','ທຸກຄົນສະແກນແລ້ວ.'],
+  staff:['Staff','ພະນັກງານ'], note:['Note','ໝາຍເຫດ'], choose:['— choose —','— ເລືອກ —'],
+  add:['Add & approve','ເພີ່ມ ແລະ ອະນຸມັດ'], added:['Added and approved.','ເພີ່ມ ແລະ ອະນຸມັດແລ້ວ.'],
+  scans:['Scans','ການສະແກນ'], noScans:['No scans for this day.','ບໍ່ມີການສະແກນໃນມື້ນີ້.'],
+  ok:['✓ OK','✓ ຖືກຕ້ອງ'], flag:['⚑ Flag','⚑ ມີບັນຫາ'],
+  flagQ:['Why flag this scan? (e.g. not at work, wrong person)','ເປັນຫຍັງຈຶ່ງໝາຍວ່າມີບັນຫາ? (ຕົວຢ່າງ: ບໍ່ໄດ້ມາວຽກ, ຜິດຄົນ)'],
+  flagDef:['Check this scan','ກວດການສະແກນນີ້'],
+  by:['by','ໂດຍ'], day:['Day','ມື້'], refresh:['Refresh','ໂຫຼດໃໝ່'],
+  notChecked:['not checked','ຍັງບໍ່ກວດ'], noPhoto:['no photo','ບໍ່ມີຮູບ'],
+  verifyHint:['Mark ✓ OK if the scan is correct, ⚑ Flag if something is wrong. Tap again to undo.','ກົດ ✓ ຖືກຕ້ອງ ຖ້າການສະແກນຖືກຕ້ອງ, ⚑ ມີບັນຫາ ຖ້າມີບັນຫາ. ກົດອີກຄັ້ງເພື່ອຍົກເລີກ.'],
+  refTitle:['Profile photo needed','ຕ້ອງຖ່າຍຮູບໂປຣໄຟລ໌'],
+  refSub:['Take one clear photo of your face (no hat, no mask). Supervisors use it to check your selfies.','ຖ່າຍຮູບໜ້າໃຫ້ຊັດເຈນ 1 ຮູບ (ບໍ່ໃສ່ໝວກ, ບໍ່ໃສ່ຜ້າອັດປາກ). ຫົວໜ້າຈະໃຊ້ກວດເຊວຟີຂອງທ່ານ.'],
+  refBtn:['Take profile photo','ຖ່າຍຮູບໂປຣໄຟລ໌'],
+  refStep:['PROFILE PHOTO','ຮູບໂປຣໄຟລ໌'],
+  refSaved:['Profile photo saved','ບັນທຶກຮູບໂປຣໄຟລ໌ແລ້ວ'],
+  refSavedSub:['You can now check in and out.','ຕອນນີ້ທ່ານສາມາດເຂົ້າວຽກ ແລະ ອອກວຽກໄດ້ແລ້ວ.'],
+  refLbl:['Profile','ໂປຣໄຟລ໌'], todayLbl:['Today','ມື້ນີ້'], noRef:['no profile','ບໍ່ມີໂປຣໄຟລ໌'],
+  gettingLoc:['Checking your location…','ກຳລັງກວດສອບສະຖານທີ່…'],
+  locOff:['Location is off. Turn on location (GPS) and try again.','ສະຖານທີ່ (GPS) ປິດຢູ່. ກະລຸນາເປີດ GPS ແລ້ວລອງໃໝ່.'],
+  locDenied:['Location blocked. Allow location for this site in your browser settings, then try again.','ສະຖານທີ່ຖືກບລັອກ. ກະລຸນາອະນຸຍາດສະຖານທີ່ໃນການຕັ້ງຄ່າບຣາວເຊີ ແລ້ວລອງໃໝ່.'],
+  posterHint:['Print this page and stick it at the shop. Staff scan it to check in / out. Their phone location must be at the shop.','ພິມໜ້ານີ້ ແລ້ວຕິດໄວ້ທີ່ຮ້ານ. ພະນັກງານສະແກນເພື່ອເຂົ້າວຽກ / ອອກວຽກ. ໂທລະສັບຕ້ອງຢູ່ທີ່ຮ້ານ.'],
+  kiosk1:['Scan to check in / check out','ສະແກນເພື່ອເຂົ້າວຽກ / ອອກວຽກ'],
+  kiosk2:['code changes every 30 seconds','ລະຫັດປ່ຽນທຸກໆ 30 ວິນາທີ'],
+  checkedIn:['Checked in','ເຂົ້າວຽກແລ້ວ'], checkedOut:['Checked out','ອອກວຽກແລ້ວ'],
+  noScanDay:['No scan this day','ບໍ່ໄດ້ສະແກນມື້ນີ້'], flagged:['Flagged','ມີບັນຫາ'], waiting:['Waiting requests','ຄຳຮ້ອງລໍຖ້າ']
+};
+const ERR_LO = {
+  'Wrong staff ID or PIN.':'ລະຫັດພະນັກງານ ຫຼື PIN ບໍ່ຖືກຕ້ອງ.',
+  'Your account is locked to another phone. Ask HR to reset it.':'ບັນຊີຂອງທ່ານຖືກລັອກໄວ້ກັບໂທລະສັບເຄື່ອງອື່ນ. ກະລຸນາແຈ້ງ HR.',
+  'This staff ID is not active. Ask HR.':'ລະຫັດພະນັກງານນີ້ຖືກປິດໃຊ້ງານ. ກະລຸນາແຈ້ງ HR.',
+  'Too many wrong tries. Wait 15 minutes.':'ໃສ່ຜິດຫຼາຍເທື່ອ. ກະລຸນາລໍຖ້າ 15 ນາທີ.',
+  'QR code expired or not valid. Scan the code at the entrance again.':'QR ໝົດອາຍຸ ຫຼື ບໍ່ຖືກຕ້ອງ. ກະລຸນາສະແກນໃໝ່ທີ່ປະຕູທາງເຂົ້າ.',
+  'You already used this QR code. Wait for the next code.':'ທ່ານໃຊ້ QR ນີ້ແລ້ວ. ກະລຸນາລໍຖ້າລະຫັດໃໝ່.',
+  'Selfie missing. Please try again.':'ບໍ່ມີຮູບເຊວຟີ. ກະລຸນາລອງໃໝ່.',
+  'No internet connection. Please try again.':'ບໍ່ມີອິນເຕີເນັດ. ກະລຸນາລອງໃໝ່.',
+  'Choose a shift.':'ກະລຸນາເລືອກກະ.', 'Choose what you forgot to scan.':'ກະລຸນາເລືອກສິ່ງທີ່ລືມສະແກນ.',
+  'Choose the date.':'ກະລຸນາເລືອກວັນທີ.', 'The date cannot be in the future.':'ບໍ່ສາມາດເລືອກວັນທີລ່ວງໜ້າໄດ້.',
+  'Too old. Requests are only for the last 7 days — ask HR.':'ເກີນກຳນົດ. ຂໍໄດ້ພາຍໃນ 7 ມື້ — ກະລຸນາແຈ້ງ HR.',
+  'Write the reason.':'ກະລຸນາຂຽນເຫດຜົນ.',
+  'You already sent a request for this date and shift.':'ທ່ານສົ່ງຄຳຮ້ອງສຳລັບວັນທີ ແລະ ກະນີ້ແລ້ວ.',
+  'You cannot approve your own request.':'ບໍ່ສາມາດອະນຸມັດຄຳຮ້ອງຂອງຕົນເອງໄດ້.',
+  'You cannot verify your own scan.':'ບໍ່ສາມາດກວດສອບການສະແກນຂອງຕົນເອງໄດ້.',
+  'Admin only.':'ສະເພາະແອດມິນເທົ່ານັ້ນ.',
+  'Take your profile photo first.':'ກະລຸນາຖ່າຍຮູບໂປຣໄຟລ໌ກ່ອນ.',
+  'Profile photo already saved. Ask HR to reset it.':'ມີຮູບໂປຣໄຟລ໌ແລ້ວ. ກະລຸນາແຈ້ງ HR ເພື່ອປ່ຽນ.',
+  'Wrong QR code. Scan the Hello Laundry QR at the shop.':'QR ບໍ່ຖືກຕ້ອງ. ກະລຸນາສະແກນ QR ຂອງ Hello Laundry ທີ່ຮ້ານ.',
+  'Already saved. Wait 1 minute before scanning again.':'ບັນທຶກແລ້ວ. ກະລຸນາລໍຖ້າ 1 ນາທີກ່ອນສະແກນອີກ.',
+  'Location is off. Turn on location (GPS) and allow it for this app.':'ສະຖານທີ່ (GPS) ປິດຢູ່. ກະລຸນາເປີດ GPS ແລະ ອະນຸຍາດໃຫ້ແອັບນີ້.',
+  'Supervisors only.':'ສະເພາະຫົວໜ້າເທົ່ານັ້ນ.', 'Staff ID not found.':'ບໍ່ພົບລະຫັດພະນັກງານ.',
+  'Phone not recognised. Reload the app.':'ບໍ່ຮູ້ຈັກໂທລະສັບ. ກະລຸນາເປີດແອັບໃໝ່.',
+  'Server error. Please try again.':'ເຊີບເວີຜິດພາດ. ກະລຸນາລອງໃໝ່.'
+};
+let LANG = (() => { try{ return localStorage.getItem('hl_lang') || 'lo' }catch(e){ return 'lo' } })();
+const t = k => (TXT[k] || [k, k])[LANG === 'lo' ? 1 : 0];
+const tErr = m => LANG === 'lo' ? (ERR_LO[m] || (m.startsWith('Already decided by ') ? 'ມີຄົນຕັດສິນແລ້ວ: ' + m.slice(19) : (m.startsWith('You are not at the shop') ? 'ທ່ານບໍ່ໄດ້ຢູ່ທີ່ຮ້ານ' + m.slice(23) : m))) : m;
+function langBtn(){ return `<button id="lang">${LANG === 'lo' ? 'EN' : 'ລາວ'}</button>` }
+function bindLang(redraw){ const b = $('#lang'); if (b) b.onclick = () => { LANG = LANG === 'lo' ? 'en' : 'lo'; store.set('hl_lang', LANG); document.documentElement.lang = LANG; redraw(); }; }
+
+/* ---------------- basics ---------------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k) }catch(e){} }
+};
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function today(){ const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function addDays(s, n){ const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function fmtDay(d){
+  const x = new Date(d + 'T00:00:00');
+  return x.toLocaleDateString(LANG === 'lo' ? 'lo-LA' : 'en-GB', { weekday:'short', day:'numeric', month:'short' });
+}
+function topbar(extra = ''){
+  return `<div class="top"><div class="brand"><img src="${STAR}" alt="Hello Laundry"><span class="t">Hello <b>Laundry</b></span></div><div class="tools">${extra}${langBtn()}</div></div>`;
+}
+
+async function api(action, body = {}){
+  if (API_URL.startsWith('PASTE')) throw new Error('App not set up yet: API_URL is missing in index.html.');
+  let r;
+  try{
+    r = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action, ...body }) });
+  }catch(e){ throw new Error(tErr('No internet connection. Please try again.')) }
+  const j = await r.json().catch(() => ({ ok:false, error:'Server error. Please try again.' }));
+  if (!j.ok) throw new Error(tErr(j.error || 'Something went wrong.'));
+  return j;
+}
+
+function deviceId(){
+  let d = store.get('hl_device');
+  if (!d){
+    d = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+    store.set('hl_device', d);
+  }
+  return d;
+}
+
+// home-screen app (Android): manifest built here so only index.html + icon.png are needed
+(function(){
+  const base = location.href.split('#')[0].replace(/[^/]*$/, '');
+  const m = { name:'Hello Laundry', short_name:'Hello Laundry', start_url: location.href.split('#')[0], display:'standalone', background_color:'#0B3466', theme_color:'#0B3466',
+    icons:[{ src: base + 'icon.png', sizes:'512x512', type:'image/png', purpose:'any' }] };
+  const l = document.createElement('link'); l.rel = 'manifest';
+  l.href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type:'application/manifest+json' }));
+  document.head.appendChild(l);
+})();
+
+function route(){
+  document.documentElement.lang = LANG;
+  const h = location.hash;
+  if (h.startsWith('#qr')) return kiosk();
+  if (h.startsWith('#admin')) return admin();
+  return staff();
+}
+window.addEventListener('hashchange', () => location.reload());
+
+/* ======================= STAFF ======================= */
+let me = null, clockTimer = null, view = 'home';
+
+function staff(){
+  const saved = JSON.parse(store.get('hl_user') || 'null');
+  if (saved) { me = saved; show('home'); refresh(); }
+  else renderLogin();
+}
+function show(v){ view = v; ({ home: renderHome, forgot: renderForgot, review: () => reviewOpen('sup') })[v](); window.scrollTo(0, 0); }
+const staffCred = () => ({ id: me.id, pin: me.pin, device: deviceId() });
+
+function renderLogin(msg = ''){
+  app.innerHTML = `
+    ${topbar()}
+    <main>
+      <div class="card">
+        <img class="loginlogo" src="${LOGO}" alt="Hello Laundry">
+        <div class="who" style="text-align:center">${t('staffLogin')}</div>
+        <div class="hello" style="text-align:center">${t('loginOnce')}</div>
+        <label>${t('staffId')}</label><input id="sid" autocapitalize="characters" autocomplete="username" placeholder="S001">
+        <label>${t('pin')}</label><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••">
+        <button class="btn" id="go">${t('login')}</button>
+        <div class="err" id="err">${esc(msg)}</div>
+      </div>
+      <p class="muted" style="text-align:center">${t('thisPhoneOnly')}</p>
+    </main>`;
+  bindLang(() => renderLogin());
+  $('#go').onclick = async () => {
+    const id = $('#sid').value.trim().toUpperCase(), pin = $('#pin').value.trim();
+    if (!id || !pin) return $('#err').textContent = t('enterBoth');
+    $('#go').disabled = true; $('#err').textContent = '';
+    try{
+      const r = await api('login', { id, pin, device: deviceId() });
+      me = { id: r.id, pin, name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests };
+      store.set('hl_user', JSON.stringify(me));
+      show('home');
+    }catch(e){ $('#err').textContent = e.message; $('#go').disabled = false; }
+  };
+  $('#pin').onkeydown = e => { if (e.key === 'Enter') $('#go').click(); };
+}
+
+function renderHome(){
+  const last = me.history && me.history[0];
+  const pend = (me.requests || []).filter(r => r.status === 'PENDING').length;
+  app.innerHTML = `
+    ${topbar(`<button id="logout">${t('logout')}</button>`)}
+    <main>
+      <div class="card" style="text-align:center">
+        <div class="hello">${t('hello')}</div>
+        <div class="who">${esc(me.name)}</div>
+        <div class="hello">${esc(me.position || '')} · ${esc(me.id)}</div>
+        <div class="clock" id="clock">--:--</div>
+        <div class="date" id="date"></div>
+      </div>
+      <div class="punch">
+        <button class="in" data-t="IN">${t('checkIn')}<small>${t('startShift')}</small></button>
+        <button class="out" data-t="OUT">${t('checkOut')}<small>${t('endShift')}</small></button>
+      </div>
+      <div class="last">${last ? `${t('last')}: <b>${t('w' + last.type)}</b> ${esc(fmtDay(last.date))} ${t('at')} ${esc(last.time)}` : t('noneMonth')}</div>
+      ${me.role === 'SUPERVISOR' ? `<button class="linkbtn sup" id="supBtn"><div><b>${t('supBtn')}</b><span>${t('supSub')}</span></div><i>›</i></button>` : ''}
+      ${me.role === 'ADMIN' ? `<button class="linkbtn sup" id="supBtn"><div><b>${t('adminBtn')}</b><span>${t('adminSub')}</span></div><i>›</i></button>` : ''}
+      <div class="card" style="margin-top:14px">
+        <h3>${t('thisMonth')}</h3>
+        <ul class="hist">${(me.history || []).map(h => `<li><span>${esc(fmtDay(h.date))}</span><span>${esc(h.time)} ${h.source === 'MANUAL' ? `<span class="pill MANUAL">${t('manual')}</span>` : ''} <span class="tag ${h.type}">${t('w' + h.type)}</span></span></li>`).join('') || `<li class="muted">${t('nothing')}</li>`}</ul>
+      </div>
+    </main>`;
+  bindLang(renderHome);
+  $('#logout').onclick = () => { if (confirm(t('logoutQ'))) { store.del('hl_user'); location.reload(); } };
+  document.querySelectorAll('.punch button').forEach(b => b.onclick = () => startPunch(b.dataset.t));
+  if ($('#supBtn')) $('#supBtn').onclick = () => show('review');
+  clearInterval(clockTimer);
+  const tick = () => {
+    const n = new Date();
+    if ($('#clock')) $('#clock').textContent = n.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    if ($('#date')) $('#date').textContent = n.toLocaleDateString(LANG === 'lo' ? 'lo-LA' : 'en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  };
+  tick(); clockTimer = setInterval(tick, 1000);
+}
+
+function shiftPicker(name){
+  return `<div class="seg v">${['D'].map(s => `<label><input type="radio" name="${name}" value="${s}" checked><span>${t('shift' + s)}</span></label>`).join('')}</div>`;
+}
+function missingPicker(name){
+  return `<div class="seg">${['IN','OUT','BOTH'].map(s => `<label><input type="radio" name="${name}" value="${s}"><span>${t('m' + s)}</span></label>`).join('')}</div>`;
+}
+const radio = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
+
+function renderForgot(){
+  const d0 = today();
+  app.innerHTML = `
+    ${topbar(`<button id="backBtn">‹ ${t('back')}</button>`)}
+    <main>
+      <div class="card">
+        <div class="who">${t('forgotTitle')}</div>
+        <label>${t('date')}</label><input type="date" id="fDate" value="${d0}" min="${addDays(d0, -7)}" max="${d0}">
+        <label>${t('shift')}</label>${shiftPicker('fShift')}
+        <label>${t('missingQ')}</label>${missingPicker('fMiss')}
+        <label>${t('reason')}</label><textarea id="fReason" placeholder="${t('reasonPh')}"></textarea>
+        <button class="btn" id="fSend">${t('send')}</button>
+        <div class="err" id="fErr"></div>
+      </div>
+      <div class="card">
+        <h3>${t('myReq')}</h3>
+        <ul class="hist">${(me.requests || []).map(r => `<li><span>${esc(fmtDay(r.date))} · ${t('sh' + r.shift)}<br><span class="muted">${t('m' + r.missing)}${r.by ? ' · ' + t('by') + ' ' + esc(r.by) : ''}</span></span><span class="pill ${esc(r.status)}">${t(r.status)}</span></li>`).join('') || `<li class="muted">${t('nothing')}</li>`}</ul>
+      </div>
+    </main>`;
+  bindLang(renderForgot);
+  $('#backBtn').onclick = () => show('home');
+  $('#fSend').onclick = async () => {
+    const b = $('#fSend'); b.disabled = true; $('#fErr').textContent = '';
+    try{
+      const r = await api('request', { ...staffCred(), date: $('#fDate').value, shift: radio('fShift'), missing: radio('fMiss'), reason: $('#fReason').value });
+      me.requests = r.requests; store.set('hl_user', JSON.stringify(me));
+      renderForgot(); const m = document.createElement('div'); m.className = 'okmsg'; m.textContent = t('sent'); $('#fErr').after(m);
+    }catch(e){ $('#fErr').textContent = e.message; b.disabled = false; }
+  };
+}
+
+async function refresh(){
+  try{
+    const r = await api('login', staffCred());
+    Object.assign(me, { name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests });
+    store.set('hl_user', JSON.stringify(me)); if (view === 'home') renderHome();
+  }catch(e){
+    if (/PIN|locked|active|ລະຫັດ|ລັອກ/i.test(e.message)) { store.del('hl_user'); renderLogin(e.message); }
+  }
+}
+
+/* ---------- camera flow: scan QR -> selfie -> send ---------- */
+let stream = null, loop = null, cancelled = false;
+const vid = $('#vid'), cv = $('#cv');
+
+function stopCam(){
+  cancelAnimationFrame(loop); loop = null;
+  if (stream) stream.getTracks().forEach(tr => tr.stop());
+  stream = null; vid.srcObject = null;
+}
+async function openCam(facing){
+  stopCam();
+  stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+  vid.srcObject = stream;
+  vid.classList.toggle('mirror', facing === 'user');
+  await vid.play().catch(() => {});
+  await new Promise(r => vid.readyState >= 2 ? r() : (vid.onloadeddata = r));
+}
+function ov(step, msg){ $('#ovStep').textContent = step; $('#ovMsg').textContent = msg; }
+function showStage(on){ $('#stage').style.display = on ? '' : 'none'; $('#result').style.display = on ? 'none' : 'flex'; }
+function closeOv(){ cancelled = true; stopCam(); $('#ov').classList.remove('on'); }
+$('#ovClose').onclick = closeOv;
+
+async function startPunch(type){
+  cancelled = false;
+  const word = t('w' + type);
+  $('#ov').classList.add('on'); showStage(true); $('#count').textContent = ''; $('#ovClose').textContent = t('cancel');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return showResult(false, t('noCam'), t('noCamSub'));
+  try{
+    showStage(false); ov(word, ''); $('#result').innerHTML = `<div class="big">📍</div><div class="t">${t('gettingLoc')}</div>`;
+    const pos = await getLocation();
+    if (cancelled) return;
+    showStage(true);
+    ov(word, t('scanQr'));
+    $('#frame').className = 'frame';
+    await openCam('environment');
+    const qr = await scanQR();
+    if (cancelled) return;
+    if (navigator.vibrate) navigator.vibrate(80);
+    stopCam();
+    if (cancelled) return;
+    showStage(false); $('#result').innerHTML = `<div class="big">⏳</div><div class="t">${t('sending')}</div>`;
+    $('#ovClose').textContent = t('wait');
+    const r = await api('punch', { ...staffCred(), type, qr, lat: pos.lat, lng: pos.lng, acc: pos.acc });
+    me.history = r.history; store.set('hl_user', JSON.stringify(me));
+    showResult(true, `${word} ${r.time}`, `${r.date} · ${me.name}`);
+    renderHome();
+  }catch(e){
+    if (cancelled) return;
+    stopCam();
+    const m = e && e.name === 'NotAllowedError' ? t('allowCam') : (e.message || String(e));
+    showResult(false, t('notSaved'), m);
+  }
+}
+async function startRef(){
+  cancelled = false;
+  $('#ov').classList.add('on'); showStage(true); $('#count').textContent = ''; $('#ovClose').textContent = t('cancel');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return showResult(false, t('noCam'), t('noCamSub'));
+  try{
+    ov(t('refStep'), t('selfie'));
+    $('#frame').className = 'frame face';
+    await openCam('user');
+    for (let i = 3; i > 0; i--) { if (cancelled) return; $('#count').textContent = i; await sleep(800); }
+    $('#count').textContent = '';
+    const photo = snap();
+    stopCam();
+    if (cancelled) return;
+    showStage(false); $('#result').innerHTML = `<div class="big">⏳</div><div class="t">${t('sending')}</div>`;
+    $('#ovClose').textContent = t('wait');
+    await api('setRef', { ...staffCred(), photo });
+    me.hasRef = true; store.set('hl_user', JSON.stringify(me));
+    showResult(true, t('refSaved'), t('refSavedSub'));
+    renderHome();
+  }catch(e){
+    if (cancelled) return;
+    stopCam();
+    showResult(false, t('notSaved'), e && e.name === 'NotAllowedError' ? t('allowCam') : (e.message || String(e)));
+  }
+}
+function getLocation(){
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error(t('locOff')));
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
+      e => reject(new Error(e.code === 1 ? t('locDenied') : t('locOff'))),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  });
+}
+function showResult(ok, title, sub){
+  showStage(false); ov('', '');
+  $('#result').innerHTML = `<div class="big">${ok ? '✅' : '⚠️'}</div><div class="t">${esc(title)}</div><div class="s">${esc(sub)}</div>`;
+  $('#ovClose').textContent = ok ? t('done') : t('close');
+}
+function scanQR(){
+  return new Promise((resolve, reject) => {
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    const started = Date.now();
+    const step = () => {
+      if (cancelled) return;
+      if (Date.now() - started > 90000) return reject(new Error(t('noQr')));
+      if (vid.videoWidth){
+        const w = 480, h = Math.round(vid.videoHeight * w / vid.videoWidth);
+        cv.width = w; cv.height = h; ctx.drawImage(vid, 0, 0, w, h);
+        const code = window.jsQR && jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+        if (code && code.data.startsWith('HLQR:')) return resolve(code.data);
+      }
+      loop = requestAnimationFrame(step);
+    };
+    step();
+  });
+}
+function snap(){
+  const w = 360, h = Math.round(vid.videoHeight * w / vid.videoWidth);
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.translate(w, 0); ctx.scale(-1, 1);
+  ctx.drawImage(vid, 0, 0, w, h);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0, h - 22, w, 22);
+  ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif';
+  ctx.fillText(`${me.id} · ${new Date().toLocaleString('en-GB')}`, 6, h - 7);
+  return cv.toDataURL('image/jpeg', 0.7);
+}
+
+/* ======================= VERIFY & APPROVE (supervisor + admin) ======================= */
+let rv = { mode: 'sup', date: today(), data: null };
+// mode 'admin' = admin PIN screen (#admin); mode 'sup' = staff login (SUPERVISOR or ADMIN role)
+const rvCred = () => rv.mode === 'admin' ? { admin: adminPin } : staffCred();
+
+async function reviewOpen(mode, date){
+  rv.mode = mode; rv.date = date || rv.date || today();
+  if (!rv.data) app.innerHTML = topbar() + `<main><div class="card muted">${t('wait')}…</div></main>`;
+  try{ rv.data = await api('day', { ...rvCred(), date: rv.date }); }
+  catch(e){
+    if (mode === 'admin') { try{ sessionStorage.removeItem('hl_admin') }catch(_){} return adminLogin(e.message); }
+    app.innerHTML = topbar(`<button id="backBtn">‹ ${t('back')}</button>`) + `<main><div class="card err">${esc(e.message)}</div></main>`;
+    $('#backBtn').onclick = () => show('home'); return;
+  }
+  renderReview();
+}
+
+function renderReview(){
+  const d = rv.data, admin = !!d.admin, pinMode = rv.mode === 'admin';
+  const pending = d.requests.filter(r => r.status === 'PENDING');
+  const decided = d.requests.filter(r => r.status !== 'PENDING');
+  const rows = d.rows.slice().reverse();
+  const ids = s => new Set(d.rows.filter(r => r.type === s).map(r => r.id));
+  const inIds = ids('IN'), outIds = ids('OUT');
+  const missing = d.staff.filter(s => !inIds.has(s.id) && !outIds.has(s.id));
+  const qrLink = admin ? location.href.split('#')[0] + '#qr=' + encodeURIComponent(d.kioskKey) : '';
+  const tools = pinMode ? `<button id="alog">${t('logout')}</button>` : `<button id="backBtn">‹ ${t('back')}</button>`;
+  app.innerHTML = `
+    ${topbar(tools)}
+    <main class="${admin ? 'wide' : ''}">
+      <div class="card"><div class="row">
+        <div><label>${t('day')}</label><input type="date" id="day" value="${esc(d.date)}"></div>
+        <button class="btn" id="reload">${t('refresh')}</button>
+      </div></div>
+      ${admin ? `<div class="stats">
+        <div class="stat"><b>${inIds.size}</b><span>${t('checkedIn')}</span></div>
+        <div class="stat"><b>${outIds.size}</b><span>${t('checkedOut')}</span></div>
+        <div class="stat"><b>${pending.length}</b><span>${t('waiting')}</span></div>
+        <div class="stat"><b>${d.rows.filter(r => r.status === 'FLAG').length}</b><span>${t('flagged')}</span></div>
+      </div>` : ''}
+      <div class="${admin ? 'cols' : ''}">
+        <div>
+          ${pending.length || decided.length ? `<div class="card">
+            <h3>${t('pendingReq')} ${pending.length ? `<span class="badge">${pending.length}</span>` : ''}</h3>
+            ${pending.map(r => `
+              <div class="req">
+                <div class="h"><b>${esc(r.name)} <span class="muted">${esc(r.staffId)}</span></b><span class="pill PENDING">${t('PENDING')}</span></div>
+                <div class="d">${esc(fmtDay(r.date))} · ${t('shift' + r.shift)} · ${t('m' + r.missing)}</div>
+                ${r.reason ? `<div class="d">“${esc(r.reason)}”</div>` : ''}
+                <div class="acts"><button class="y" data-req="${esc(r.id)}" data-dec="APPROVED">${t('approve')}</button><button class="n" data-req="${esc(r.id)}" data-dec="REJECTED">${t('reject')}</button></div>
+              </div>`).join('') || `<div class="muted">${t('noPending')}</div>`}
+            ${decided.length ? `<ul class="hist" style="margin-top:8px">${decided.map(r => `<li><span>${esc(r.name)} · ${esc(fmtDay(r.date))} · ${t('sh' + r.shift)} · ${t('m' + r.missing)}<br><span class="muted">${t('by')} ${esc(r.by)}</span></span><span class="pill ${esc(r.status)}">${t(r.status)}</span></li>`).join('')}</ul>` : ''}
+          </div>` : ''}
+          <div class="card">
+            <h3>${t('noScanDay')} (${missing.length})</h3>
+            <div class="muted" style="margin-bottom:8px">${t('noScanHint')}</div>
+            <div class="chips">${missing.map(s => `<button class="chip" data-pick="${esc(s.id)}">${esc(s.name)}</button>`).join('') || `<span class="muted">${t('allScanned')}</span>`}</div>
+          </div>
+          <div class="card" id="addCard">
+            <h3>${t('addFor')}</h3>
+            <div class="muted">${t('addForSub')}</div>
+            <label>${t('staff')}</label>
+            <select id="aStaff"><option value="">${t('choose')}</option>${d.staff.filter(s => admin || s.id !== me.id).map(s => `<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.id)})</option>`).join('')}</select>
+            <label>${t('date')}</label><input type="date" id="aDate" value="${esc(d.date)}" min="${addDays(today(), -7)}" max="${today()}">
+            <label>${t('shift')}</label>${shiftPicker('aShift')}
+            <label>${t('missingQ')}</label>${missingPicker('aMiss')}
+            <label>${t('note')}</label><input id="aNote">
+            <button class="btn" id="aSend">${t('add')}</button>
+            <div class="err" id="aErr"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <h3>${t('scans')} · ${esc(fmtDay(d.date))}</h3>
+            <div class="muted" style="margin-bottom:6px">${t('verifyHint')}</div>
+            ${rows.map(r => `
+              <div class="scan ${esc(r.status)}">
+                <div class="info">
+                  <b>${esc(r.time.slice(0,5))} · ${esc(r.name)}</b> <span class="tag ${esc(r.type)}">${t('w' + r.type)}</span>
+                  <div>${esc(r.id)}${r.source === 'MANUAL' ? ` · <span class="pill MANUAL">${t('manual')}</span>` : ''} · ${r.status ? `<span class="pill ${esc(r.status)}">${r.status === 'OK' ? 'OK' : t('flagged')}</span> ${t('by')} ${esc(r.by)}${r.status === 'FLAG' && r.note ? ' — ' + esc(r.note) : ''}` : t('notChecked')}</div>
+                </div>
+                ${r.source === 'MANUAL' || (!admin && r.id === me.id) ? '' : `<div class="acts">
+                  <button class="y ${r.status === 'OK' ? 'on' : ''}" data-row="${r.row}" data-st="OK">${t('ok')}</button>
+                  <button class="n ${r.status === 'FLAG' ? 'on' : ''}" data-row="${r.row}" data-st="FLAG">${t('flag')}</button></div>`}
+              </div>`).join('') || `<div class="muted">${t('noScans')}</div>`}
+          </div>
+        </div>
+      </div>
+      ${admin ? `
+      <div class="card">
+        <h3>Download records</h3>
+        <div class="row">
+          <div><label>From</label><input type="date" id="from" value="${esc(d.date.slice(0,8))}01"></div>
+          <div><label>To</label><input type="date" id="to" value="${esc(d.date)}"></div>
+          <button class="btn" id="csv">Download CSV</button>
+        </div>
+        <div class="err" id="csvErr"></div>
+      </div>
+      <div class="card">
+        <h3>Printable QR poster</h3>
+        <div class="muted">Open this link on a computer or phone and print it (A4). Stick it at the shop. Don't send the link to staff.</div>
+        <div class="copy" style="margin-top:8px"><input id="qrl" readonly value="${esc(qrLink)}"><button class="btn" style="width:auto;margin:0;padding:10px 14px" id="cp">Copy</button></div>
+      </div>
+      <div class="card">
+        <h3>Staff phones & roles</h3>
+        <div class="muted" style="margin-bottom:8px">To move someone to a new phone, clear their DeviceID cell in the Staff sheet.</div>
+        <table><tbody>${d.staff.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td class="hide-sm">${esc(s.position)}</td><td>${s.role === 'SUPERVISOR' ? '<span class="pill PENDING">SUPERVISOR</span>' : ''}</td><td class="muted">${s.device === 'locked' ? '📱 phone set' : 'not logged in yet'}</td></tr>`).join('')}</tbody></table>
+      </div>` : ''}
+    </main>`;
+
+  bindLang(renderReview);
+  if (pinMode) $('#alog').onclick = () => { try{ sessionStorage.removeItem('hl_admin') }catch(e){} location.reload(); };
+  else $('#backBtn').onclick = () => { refresh(); show('home'); };
+  $('#reload').onclick = () => reviewOpen(rv.mode, $('#day').value || today());
+  $('#day').onchange = () => reviewOpen(rv.mode, $('#day').value || today());
+  document.querySelectorAll('[data-req]').forEach(b => b.onclick = async () => {
+    if (b.dataset.dec === 'REJECTED' && !confirm(t('rejectQ'))) return;
+    b.disabled = true;
+    try{ await api('decide', { ...rvCred(), reqId: b.dataset.req, decision: b.dataset.dec }); reviewOpen(rv.mode, rv.date); }
+    catch(e){ alert(e.message); b.disabled = false; }
+  });
+  document.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
+    let status = b.dataset.st, note = '';
+    if (b.classList.contains('on')) status = '';                       // tap again = undo
+    else if (status === 'FLAG') { note = prompt(t('flagQ'), t('flagDef')); if (note === null) return; }
+    b.disabled = true;
+    try{ await api('check', { ...rvCred(), row: b.dataset.row, status, note }); reviewOpen(rv.mode, rv.date); }
+    catch(e){ alert(e.message); b.disabled = false; }
+  });
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    const sel = $('#aStaff'); if (![...sel.options].some(o => o.value === b.dataset.pick)) return;
+    sel.value = b.dataset.pick; $('#aDate').value = rv.date;
+    $('#addCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  if ($('#aSend')) $('#aSend').onclick = async () => {
+    const b = $('#aSend'); b.disabled = true; $('#aErr').textContent = '';
+    try{
+      await api('request', { ...rvCred(), forId: $('#aStaff').value, date: $('#aDate').value, shift: radio('aShift'), missing: radio('aMiss'), reason: $('#aNote').value });
+      await reviewOpen(rv.mode, rv.date);
+      const m = document.createElement('div'); m.className = 'okmsg'; m.textContent = t('added'); $('#aErr').after(m);
+    }catch(e){ $('#aErr').textContent = e.message; b.disabled = false; }
+  };
+  if (admin){
+    $('#cp').onclick = () => { $('#qrl').select(); navigator.clipboard?.writeText($('#qrl').value); $('#cp').textContent = 'Copied'; };
+    $('#csv').onclick = downloadCsv;
+  }
+  loadThumbs();
+}
+
+const photoCache = {};
+async function loadThumbs(){
+  const imgs = [...document.querySelectorAll('img.thumb')];
+  const one = async img => {
+    const id = img.dataset.photo; if (!id) return;
+    try{
+      photoCache[id] = photoCache[id] || (await api('photo', { ...rvCred(), fileId: id })).data;
+      img.src = photoCache[id];
+      img.onclick = () => { $('#bigImg img').src = img.src; $('#bigImg').classList.add('on'); };
+    }catch(e){}
+  };
+  for (let i = 0; i < imgs.length; i += 4) await Promise.all(imgs.slice(i, i + 4).map(one));
+}
+$('#bigImg').onclick = () => $('#bigImg').classList.remove('on');
+
+/* ======================= ADMIN ======================= */
+let adminPin = null;
+function admin(){
+  try{ adminPin = sessionStorage.getItem('hl_admin') }catch(e){}
+  adminPin ? reviewOpen('admin', today()) : adminLogin();
+}
+function adminLogin(msg = ''){
+  app.innerHTML = `
+    ${topbar()}
+    <main><div class="card">
+      <img class="loginlogo" src="${LOGO}" alt="Hello Laundry">
+      <div class="who" style="text-align:center">Admin</div>
+      <label>Admin PIN</label><input id="ap" type="password" inputmode="numeric">
+      <button class="btn" id="ago">${t('login')}</button><div class="err" id="err">${esc(msg)}</div>
+    </div></main>`;
+  bindLang(() => adminLogin());
+  $('#ago').onclick = async () => {
+    adminPin = $('#ap').value.trim(); $('#ago').disabled = true;
+    try{ rv.mode = 'admin'; rv.data = await api('day', { admin: adminPin, date: today() }); rv.date = rv.data.date;
+         try{ sessionStorage.setItem('hl_admin', adminPin) }catch(e){} renderReview(); }
+    catch(e){ adminPin = null; $('#err').textContent = e.message; $('#ago').disabled = false; }
+  };
+  $('#ap').onkeydown = e => { if (e.key === 'Enter') $('#ago').click(); };
+}
+async function downloadCsv(){
+  const from = $('#from').value, to = $('#to').value;
+  $('#csvErr').textContent = '';
+  try{
+    const r = await api('export', { ...rvCred(), from, to });
+    const lines = [['Date','Time','StaffID','Name','Type','Source','Status','Note','CheckedBy']]
+      .concat(r.rows.map(x => [x.date, x.time, x.id, x.name, x.type, x.source, x.status, x.note, x.by]));
+    const csv = '﻿' + lines.map(l => l.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `Hello_Laundry_${from}_to_${to}.csv`; a.click();
+  }catch(e){ $('#csvErr').textContent = e.message; }
+}
+
+/* ======================= ENTRANCE QR SCREEN ======================= */
+function kiosk(){
+  const m = location.hash.match(/#qr=([^&]+)/);
+  const key = m ? decodeURIComponent(m[1]) : '';
+  document.body.style.background = '#fff';
+  app.innerHTML = `
+    <style>
+      .poster{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--navy)}
+      .poster img{width:min(60vw,360px)}
+      .poster .qr{margin:18px 0;padding:14px;border:3px solid var(--navy);border-radius:20px}
+      .poster .qr svg{display:block;width:min(70vw,420px);height:min(70vw,420px)}
+      .poster h1{font-size:30px;margin:10px 0 0}.poster h2{font-size:20px;margin:4px 0;color:var(--gold)}
+      .poster p{max-width:520px;color:#555}
+      @media print{.noprint{display:none}.poster{min-height:auto;padding-top:10mm}}
+    </style>
+    <div class="poster">
+      <img src="${LOGO}" alt="Hello Laundry">
+      <h1>${TXT.kiosk1[1]}</h1><h2>${TXT.kiosk1[0]}</h2>
+      <div class="qr" id="qrBox"></div>
+      <p class="noprint">${TXT.posterHint[0]}<br>${TXT.posterHint[1]}</p>
+      <button class="btn noprint" style="width:auto;padding:12px 28px" onclick="window.print()">🖨 Print</button>
+      <div class="err" id="kerr"></div>
+    </div>`;
+  if (!key) { $('#kerr').textContent = 'QR key missing. Open this page from the admin screen.'; return; }
+  const q = qrcode(0, 'M'); q.addData('HLQR:' + key); q.make();
+  $('#qrBox').innerHTML = q.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+}
+
+route();
+</script>
+</body>
+</html>
