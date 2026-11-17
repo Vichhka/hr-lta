@@ -187,7 +187,7 @@ const TXT = {
   supBtn:['Supervisor: verify & approve','ຫົວໜ້າ: ກວດສອບ ແລະ ອະນຸມັດ'],
   adminBtn:['Admin: manage everything','ແອດມິນ: ຈັດການທັງໝົດ'],
   adminSub:['Approve, add missed scans, download, settings','ອະນຸມັດ, ເພີ່ມການສະແກນ, ດາວໂຫຼດ, ຕັ້ງຄ່າ'],
-  supSub:['Check selfies and forgot-scan requests','ກວດເຊວຟີ ແລະ ຄຳຮ້ອງລືມສະແກນ'],
+  supSub:['Verify scans and forgot-scan requests','ກວດສອບການສະແກນ ແລະ ຄຳຮ້ອງລືມສະແກນ'],
   step1:['STEP 1 OF 2','ຂັ້ນຕອນ 1/2'], step2:['STEP 2 OF 2','ຂັ້ນຕອນ 2/2'],
   scanQr:['Scan the QR code at the entrance','ສະແກນ QR ທີ່ປະຕູທາງເຂົ້າ'],
   selfie:['Selfie — look at the camera','ຖ່າຍເຊວຟີ — ເບິ່ງກ້ອງ'],
@@ -207,11 +207,11 @@ const TXT = {
   add:['Add & approve','ເພີ່ມ ແລະ ອະນຸມັດ'], added:['Added and approved.','ເພີ່ມ ແລະ ອະນຸມັດແລ້ວ.'],
   scans:['Scans','ການສະແກນ'], noScans:['No scans for this day.','ບໍ່ມີການສະແກນໃນມື້ນີ້.'],
   ok:['✓ OK','✓ ຖືກຕ້ອງ'], flag:['⚑ Flag','⚑ ມີບັນຫາ'],
-  flagQ:['Why flag this scan? (e.g. wrong face)','ເປັນຫຍັງຈຶ່ງໝາຍວ່າມີບັນຫາ? (ຕົວຢ່າງ: ໜ້າບໍ່ກົງ)'],
-  flagDef:['Check selfie','ກວດເຊວຟີ'],
+  flagQ:['Why flag this scan? (e.g. not at work, wrong person)','ເປັນຫຍັງຈຶ່ງໝາຍວ່າມີບັນຫາ? (ຕົວຢ່າງ: ບໍ່ໄດ້ມາວຽກ, ຜິດຄົນ)'],
+  flagDef:['Check this scan','ກວດການສະແກນນີ້'],
   by:['by','ໂດຍ'], day:['Day','ມື້'], refresh:['Refresh','ໂຫຼດໃໝ່'],
   notChecked:['not checked','ຍັງບໍ່ກວດ'], noPhoto:['no photo','ບໍ່ມີຮູບ'],
-  verifyHint:['Compare the profile photo with today\'s selfie. Tap a photo to enlarge.','ປຽບທຽບຮູບໂປຣໄຟລ໌ກັບເຊວຟີມື້ນີ້. ແຕະຮູບເພື່ອຂະຫຍາຍ.'],
+  verifyHint:['Mark ✓ OK if the scan is correct, ⚑ Flag if something is wrong. Tap again to undo.','ກົດ ✓ ຖືກຕ້ອງ ຖ້າການສະແກນຖືກຕ້ອງ, ⚑ ມີບັນຫາ ຖ້າມີບັນຫາ. ກົດອີກຄັ້ງເພື່ອຍົກເລີກ.'],
   refTitle:['Profile photo needed','ຕ້ອງຖ່າຍຮູບໂປຣໄຟລ໌'],
   refSub:['Take one clear photo of your face (no hat, no mask). Supervisors use it to check your selfies.','ຖ່າຍຮູບໜ້າໃຫ້ຊັດເຈນ 1 ຮູບ (ບໍ່ໃສ່ໝວກ, ບໍ່ໃສ່ຜ້າອັດປາກ). ຫົວໜ້າຈະໃຊ້ກວດເຊວຟີຂອງທ່ານ.'],
   refBtn:['Take profile photo','ຖ່າຍຮູບໂປຣໄຟລ໌'],
@@ -590,7 +590,7 @@ function renderReview(){
         <div class="stat"><b>${inIds.size}</b><span>${t('checkedIn')}</span></div>
         <div class="stat"><b>${outIds.size}</b><span>${t('checkedOut')}</span></div>
         <div class="stat"><b>${pending.length}</b><span>${t('waiting')}</span></div>
-        <div class="stat"><b>${missing.length}</b><span>${t('noScanDay')}</span></div>
+        <div class="stat"><b>${d.rows.filter(r => r.status === 'FLAG').length}</b><span>${t('flagged')}</span></div>
       </div>` : ''}
       <div class="${admin ? 'cols' : ''}">
         <div>
@@ -621,13 +621,16 @@ function renderReview(){
         <div>
           <div class="card">
             <h3>${t('scans')} · ${esc(fmtDay(d.date))}</h3>
+            <div class="muted" style="margin-bottom:6px">${t('verifyHint')}</div>
             ${rows.map(r => `
-              <div class="scan">
+              <div class="scan ${esc(r.status)}">
                 <div class="info">
                   <b>${esc(r.time.slice(0,5))} · ${esc(r.name)}</b> <span class="tag ${esc(r.type)}">${t('w' + r.type)}</span>
-                  <div>${esc(r.id)}${r.source === 'MANUAL' ? ` · <span class="pill MANUAL">${t('manual')}</span> ${r.by ? t('by') + ' ' + esc(r.by) : ''}` : ''}</div>
+                  <div>${esc(r.id)}${r.source === 'MANUAL' ? ` · <span class="pill MANUAL">${t('manual')}</span>` : ''} · ${r.status ? `<span class="pill ${esc(r.status)}">${r.status === 'OK' ? 'OK' : t('flagged')}</span> ${t('by')} ${esc(r.by)}${r.status === 'FLAG' && r.note ? ' — ' + esc(r.note) : ''}` : t('notChecked')}</div>
                 </div>
-
+                ${r.source === 'MANUAL' || (!admin && r.id === me.id) ? '' : `<div class="acts">
+                  <button class="y ${r.status === 'OK' ? 'on' : ''}" data-row="${r.row}" data-st="OK">${t('ok')}</button>
+                  <button class="n ${r.status === 'FLAG' ? 'on' : ''}" data-row="${r.row}" data-st="FLAG">${t('flag')}</button></div>`}
               </div>`).join('') || `<div class="muted">${t('noScans')}</div>`}
           </div>
           ${admin ? `
@@ -669,6 +672,14 @@ function renderReview(){
     if (b.dataset.dec === 'REJECTED' && !confirm(t('rejectQ'))) return;
     b.disabled = true;
     try{ await api('decide', { ...rvCred(), reqId: b.dataset.req, decision: b.dataset.dec }); reviewOpen(rv.mode, rv.date); }
+    catch(e){ alert(e.message); b.disabled = false; }
+  });
+  document.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
+    let status = b.dataset.st, note = '';
+    if (b.classList.contains('on')) status = '';                       // tap again = undo
+    else if (status === 'FLAG') { note = prompt(t('flagQ'), t('flagDef')); if (note === null) return; }
+    b.disabled = true;
+    try{ await api('check', { ...rvCred(), row: b.dataset.row, status, note }); reviewOpen(rv.mode, rv.date); }
     catch(e){ alert(e.message); b.disabled = false; }
   });
   if ($('#aSend')) $('#aSend').onclick = async () => {
@@ -730,8 +741,8 @@ async function downloadCsv(){
   $('#csvErr').textContent = '';
   try{
     const r = await api('export', { ...rvCred(), from, to });
-    const lines = [['Date','Time','StaffID','Name','Type','Source','Note','ApprovedBy']]
-      .concat(r.rows.map(x => [x.date, x.time, x.id, x.name, x.type, x.source, x.note, x.source === 'MANUAL' ? x.by : '']));
+    const lines = [['Date','Time','StaffID','Name','Type','Source','Status','Note','CheckedBy']]
+      .concat(r.rows.map(x => [x.date, x.time, x.id, x.name, x.type, x.source, x.status, x.note, x.by]));
     const csv = '﻿' + lines.map(l => l.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
