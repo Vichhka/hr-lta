@@ -115,7 +115,8 @@
   .req .d{font-size:14px;color:var(--mute);margin-top:4px}
   .req .acts{margin-top:10px}.req .acts button{flex:1;padding:10px}
   .chips{display:flex;flex-wrap:wrap;gap:6px}
-  .chip{background:#FDF3E1;border:1px solid #F2D8A7;border-radius:20px;padding:3px 10px;font-size:13px}
+  .chip{background:#FDF3E1;border:1px solid #F2D8A7;border-radius:20px;padding:5px 12px;font-size:14px;color:var(--ink)}
+  button.chip{cursor:pointer}
   table{width:100%;border-collapse:collapse;font-size:14px}
   td{padding:8px;border-bottom:1px solid var(--line)}
   .big-img{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:20}
@@ -187,7 +188,7 @@ const TXT = {
   supBtn:['Supervisor: verify & approve','ຫົວໜ້າ: ກວດສອບ ແລະ ອະນຸມັດ'],
   adminBtn:['Admin: manage everything','ແອດມິນ: ຈັດການທັງໝົດ'],
   adminSub:['Approve, add missed scans, download, settings','ອະນຸມັດ, ເພີ່ມການສະແກນ, ດາວໂຫຼດ, ຕັ້ງຄ່າ'],
-  supSub:['Verify scans and forgot-scan requests','ກວດສອບການສະແກນ ແລະ ຄຳຮ້ອງລືມສະແກນ'],
+  supSub:['Verify scans and add missed scans','ກວດສອບການສະແກນ ແລະ ເພີ່ມການສະແກນທີ່ລືມ'],
   step1:['STEP 1 OF 2','ຂັ້ນຕອນ 1/2'], step2:['STEP 2 OF 2','ຂັ້ນຕອນ 2/2'],
   scanQr:['Scan the QR code at the entrance','ສະແກນ QR ທີ່ປະຕູທາງເຂົ້າ'],
   selfie:['Selfie — look at the camera','ຖ່າຍເຊວຟີ — ເບິ່ງກ້ອງ'],
@@ -202,7 +203,9 @@ const TXT = {
   approve:['Approve','ອະນຸມັດ'], reject:['Reject','ບໍ່ອະນຸມັດ'],
   rejectQ:['Reject this request?','ບໍ່ອະນຸມັດຄຳຮ້ອງນີ້ບໍ?'],
   addFor:['Add a missed scan for staff','ເພີ່ມການສະແກນໃຫ້ພະນັກງານ'],
-  addForSub:['Use when a staff member has no phone. It is approved at once.','ໃຊ້ເມື່ອພະນັກງານບໍ່ມີໂທລະສັບ. ຈະອະນຸມັດທັນທີ.'],
+  addForSub:['For staff who forgot to scan. It is saved and approved at once.','ສຳລັບພະນັກງານທີ່ລືມສະແກນ. ຈະບັນທຶກ ແລະ ອະນຸມັດທັນທີ.'],
+  noScanHint:['Staff with no scan on this day (includes OFF / leave). Tap a name to add a missed scan.','ພະນັກງານທີ່ບໍ່ໄດ້ສະແກນມື້ນີ້ (ລວມ OFF / ລາພັກ). ແຕະຊື່ເພື່ອເພີ່ມການສະແກນ.'],
+  allScanned:['Everyone scanned.','ທຸກຄົນສະແກນແລ້ວ.'],
   staff:['Staff','ພະນັກງານ'], note:['Note','ໝາຍເຫດ'], choose:['— choose —','— ເລືອກ —'],
   add:['Add & approve','ເພີ່ມ ແລະ ອະນຸມັດ'], added:['Added and approved.','ເພີ່ມ ແລະ ອະນຸມັດແລ້ວ.'],
   scans:['Scans','ການສະແກນ'], noScans:['No scans for this day.','ບໍ່ມີການສະແກນໃນມື້ນີ້.'],
@@ -371,7 +374,6 @@ function renderHome(){
         <button class="out" data-t="OUT">${t('checkOut')}<small>${t('endShift')}</small></button>
       </div>
       <div class="last">${last ? `${t('last')}: <b>${t('w' + last.type)}</b> ${esc(fmtDay(last.date))} ${t('at')} ${esc(last.time)}` : t('noneMonth')}</div>
-      <button class="linkbtn" id="forgotBtn"><div><b>${t('forgot')}${pend ? `<span class="badge">${pend}</span>` : ''}</b><span>${t('forgotSub')}</span></div><i>›</i></button>
       ${me.role === 'SUPERVISOR' ? `<button class="linkbtn sup" id="supBtn"><div><b>${t('supBtn')}</b><span>${t('supSub')}</span></div><i>›</i></button>` : ''}
       ${me.role === 'ADMIN' ? `<button class="linkbtn sup" id="supBtn"><div><b>${t('adminBtn')}</b><span>${t('adminSub')}</span></div><i>›</i></button>` : ''}
       <div class="card" style="margin-top:14px">
@@ -382,7 +384,6 @@ function renderHome(){
   bindLang(renderHome);
   $('#logout').onclick = () => { if (confirm(t('logoutQ'))) { store.del('hrlta_user'); location.reload(); } };
   document.querySelectorAll('.punch button').forEach(b => b.onclick = () => startPunch(b.dataset.t));
-  $('#forgotBtn').onclick = () => show('forgot');
   if ($('#supBtn')) $('#supBtn').onclick = () => show('review');
   clearInterval(clockTimer);
   const tick = () => {
@@ -594,7 +595,7 @@ function renderReview(){
       </div>` : ''}
       <div class="${admin ? 'cols' : ''}">
         <div>
-          <div class="card">
+          ${pending.length || decided.length ? `<div class="card">
             <h3>${t('pendingReq')} ${pending.length ? `<span class="badge">${pending.length}</span>` : ''}</h3>
             ${pending.map(r => `
               <div class="req">
@@ -604,8 +605,13 @@ function renderReview(){
                 <div class="acts"><button class="y" data-req="${esc(r.id)}" data-dec="APPROVED">${t('approve')}</button><button class="n" data-req="${esc(r.id)}" data-dec="REJECTED">${t('reject')}</button></div>
               </div>`).join('') || `<div class="muted">${t('noPending')}</div>`}
             ${decided.length ? `<ul class="hist" style="margin-top:8px">${decided.map(r => `<li><span>${esc(r.name)} · ${esc(fmtDay(r.date))} · ${t('sh' + r.shift)} · ${t('m' + r.missing)}<br><span class="muted">${t('by')} ${esc(r.by)}</span></span><span class="pill ${esc(r.status)}">${t(r.status)}</span></li>`).join('')}</ul>` : ''}
-          </div>
+          </div>` : ''}
           <div class="card">
+            <h3>${t('noScanDay')} (${missing.length})</h3>
+            <div class="muted" style="margin-bottom:8px">${t('noScanHint')}</div>
+            <div class="chips">${missing.map(s => `<button class="chip" data-pick="${esc(s.id)}">${esc(s.name)}</button>`).join('') || `<span class="muted">${t('allScanned')}</span>`}</div>
+          </div>
+          <div class="card" id="addCard">
             <h3>${t('addFor')}</h3>
             <div class="muted">${t('addForSub')}</div>
             <label>${t('staff')}</label>
@@ -633,12 +639,6 @@ function renderReview(){
                   <button class="n ${r.status === 'FLAG' ? 'on' : ''}" data-row="${r.row}" data-st="FLAG">${t('flag')}</button></div>`}
               </div>`).join('') || `<div class="muted">${t('noScans')}</div>`}
           </div>
-          ${admin ? `
-          <div class="card">
-            <h3>${t('noScanDay')} (${missing.length})</h3>
-            <div class="muted" style="margin-bottom:8px">Includes staff who are OFF or on leave. Compare with the roster.</div>
-            <div class="chips">${missing.map(s => `<span class="chip">${esc(s.name)}</span>`).join('') || '<span class="muted">Everyone scanned.</span>'}</div>
-          </div>` : ''}
         </div>
       </div>
       ${admin ? `
@@ -681,6 +681,11 @@ function renderReview(){
     b.disabled = true;
     try{ await api('check', { ...rvCred(), row: b.dataset.row, status, note }); reviewOpen(rv.mode, rv.date); }
     catch(e){ alert(e.message); b.disabled = false; }
+  });
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    const sel = $('#aStaff'); if (![...sel.options].some(o => o.value === b.dataset.pick)) return;
+    sel.value = b.dataset.pick; $('#aDate').value = rv.date;
+    $('#addCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   if ($('#aSend')) $('#aSend').onclick = async () => {
     const b = $('#aSend'); b.disabled = true; $('#aErr').textContent = '';
