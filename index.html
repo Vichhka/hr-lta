@@ -366,7 +366,6 @@ function renderHome(){
         <div class="clock" id="clock">--:--</div>
         <div class="date" id="date"></div>
       </div>
-      ${me.hasRef === false ? `<div class="refcard"><b>📷 ${t('refTitle')}</b><p>${t('refSub')}</p><button class="btn" id="refBtn">${t('refBtn')}</button></div>` : ''}
       <div class="punch">
         <button class="in" data-t="IN">${t('checkIn')}<small>${t('startShift')}</small></button>
         <button class="out" data-t="OUT">${t('checkOut')}<small>${t('endShift')}</small></button>
@@ -382,8 +381,7 @@ function renderHome(){
     </main>`;
   bindLang(renderHome);
   $('#logout').onclick = () => { if (confirm(t('logoutQ'))) { store.del('hrlta_user'); location.reload(); } };
-  document.querySelectorAll('.punch button').forEach(b => b.onclick = () => me.hasRef === false ? startRef() : startPunch(b.dataset.t));
-  if ($('#refBtn')) $('#refBtn').onclick = startRef;
+  document.querySelectorAll('.punch button').forEach(b => b.onclick = () => startPunch(b.dataset.t));
   $('#forgotBtn').onclick = () => show('forgot');
   if ($('#supBtn')) $('#supBtn').onclick = () => show('review');
   clearInterval(clockTimer);
@@ -472,23 +470,17 @@ async function startPunch(type){
   $('#ov').classList.add('on'); showStage(true); $('#count').textContent = ''; $('#ovClose').textContent = t('cancel');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return showResult(false, t('noCam'), t('noCamSub'));
   try{
-    ov(`${t('step1')} · ${word}`, t('scanQr'));
+    ov(word, t('scanQr'));
     $('#frame').className = 'frame';
     await openCam('environment');
     const qr = await scanQR();
     if (cancelled) return;
     if (navigator.vibrate) navigator.vibrate(80);
-    ov(`${t('step2')} · ${word}`, t('selfie'));
-    $('#frame').className = 'frame face';
-    await openCam('user');
-    for (let i = 3; i > 0; i--) { if (cancelled) return; $('#count').textContent = i; await sleep(800); }
-    $('#count').textContent = '';
-    const photo = snap();
     stopCam();
     if (cancelled) return;
     showStage(false); $('#result').innerHTML = `<div class="big">⏳</div><div class="t">${t('sending')}</div>`;
     $('#ovClose').textContent = t('wait');
-    const r = await api('punch', { ...staffCred(), type, qr, photo });
+    const r = await api('punch', { ...staffCred(), type, qr });
     me.history = r.history; store.set('hrlta_user', JSON.stringify(me));
     showResult(true, `${word} ${r.time}`, `${r.date} · ${me.name}`);
     renderHome();
@@ -629,13 +621,8 @@ function renderReview(){
         <div>
           <div class="card">
             <h3>${t('scans')} · ${esc(fmtDay(d.date))}</h3>
-            <div class="muted" style="margin-bottom:6px">${t('verifyHint')}</div>
             ${rows.map(r => `
               <div class="scan">
-                <div class="pair">
-                  <figure>${r.ref ? `<img class="thumb" data-photo="${esc(r.ref)}" alt="">` : `<div class="thumb none">${t('noRef')}</div>`}<figcaption>${t('refLbl')}</figcaption></figure>
-                  <figure>${r.photo ? `<img class="thumb" data-photo="${esc(r.photo)}" alt="">` : `<div class="thumb none">${t('noPhoto')}</div>`}<figcaption>${t('todayLbl')}</figcaption></figure>
-                </div>
                 <div class="info">
                   <b>${esc(r.time.slice(0,5))} · ${esc(r.name)}</b> <span class="tag ${esc(r.type)}">${t('w' + r.type)}</span>
                   <div>${esc(r.id)}${r.source === 'MANUAL' ? ` · <span class="pill MANUAL">${t('manual')}</span> ${r.by ? t('by') + ' ' + esc(r.by) : ''}` : ''}</div>
@@ -668,8 +655,8 @@ function renderReview(){
       </div>
       <div class="card">
         <h3>Staff phones & roles</h3>
-        <div class="muted" style="margin-bottom:8px">To move someone to a new phone, clear their DeviceID cell in the Staff sheet. To retake a profile photo, clear their ProfilePhoto cell.</div>
-        <table><tbody>${d.staff.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td class="hide-sm">${esc(s.position)}</td><td>${s.role === 'SUPERVISOR' ? '<span class="pill PENDING">SUPERVISOR</span>' : ''}</td><td class="muted">${s.device === 'locked' ? '📱 phone set' : 'not logged in yet'}</td><td class="muted">${s.ref ? '📷 profile set' : 'no profile photo'}</td></tr>`).join('')}</tbody></table>
+        <div class="muted" style="margin-bottom:8px">To move someone to a new phone, clear their DeviceID cell in the Staff sheet.</div>
+        <table><tbody>${d.staff.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td class="hide-sm">${esc(s.position)}</td><td>${s.role === 'SUPERVISOR' ? '<span class="pill PENDING">SUPERVISOR</span>' : ''}</td><td class="muted">${s.device === 'locked' ? '📱 phone set' : 'not logged in yet'}</td></tr>`).join('')}</tbody></table>
       </div>` : ''}
     </main>`;
 
