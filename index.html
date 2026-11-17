@@ -605,18 +605,18 @@ function renderReview(){
               </div>`).join('') || `<div class="muted">${t('noPending')}</div>`}
             ${decided.length ? `<ul class="hist" style="margin-top:8px">${decided.map(r => `<li><span>${esc(r.name)} · ${esc(fmtDay(r.date))} · ${t('sh' + r.shift)} · ${t('m' + r.missing)}<br><span class="muted">${t('by')} ${esc(r.by)}</span></span><span class="pill ${esc(r.status)}">${t(r.status)}</span></li>`).join('')}</ul>` : ''}
           </div>
-          ${admin ? `<div class="card">
+          <div class="card">
             <h3>${t('addFor')}</h3>
             <div class="muted">${t('addForSub')}</div>
             <label>${t('staff')}</label>
-            <select id="aStaff"><option value="">${t('choose')}</option>${d.staff.map(s => `<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.id)})</option>`).join('')}</select>
+            <select id="aStaff"><option value="">${t('choose')}</option>${d.staff.filter(s => admin || s.id !== me.id).map(s => `<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.id)})</option>`).join('')}</select>
             <label>${t('date')}</label><input type="date" id="aDate" value="${esc(d.date)}" min="${addDays(today(), -7)}" max="${today()}">
             <label>${t('shift')}</label>${shiftPicker('aShift')}
             <label>${t('missingQ')}</label>${missingPicker('aMiss')}
             <label>${t('note')}</label><input id="aNote">
             <button class="btn" id="aSend">${t('add')}</button>
             <div class="err" id="aErr"></div>
-          </div>` : ''}
+          </div>
         </div>
         <div>
           <div class="card">
