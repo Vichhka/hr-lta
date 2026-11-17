@@ -195,6 +195,9 @@ const TXT = {
   sending:['Sending…','ກຳລັງສົ່ງ…'], notSaved:['Not saved','ບໍ່ສຳເລັດ'],
   cancel:['Cancel','ຍົກເລີກ'], done:['Done','ສຳເລັດ'], close:['Close','ປິດ'], wait:['Please wait','ກະລຸນາລໍຖ້າ'],
   noCam:['Camera not available','ບໍ່ສາມາດໃຊ້ກ້ອງໄດ້'],
+  gettingLoc:['Checking your location…','ກຳລັງກວດສອບສະຖານທີ່…'],
+  locOff:['Location is off. Turn on location (GPS) and try again.','ສະຖານທີ່ (GPS) ປິດຢູ່. ກະລຸນາເປີດ GPS ແລ້ວລອງໃໝ່.'],
+  locDenied:['Location blocked. Allow location for this site in your browser settings, then try again.','ສະຖານທີ່ຖືກບລັອກ. ກະລຸນາອະນຸຍາດສະຖານທີ່ໃນການຕັ້ງຄ່າບຣາວເຊີ ແລ້ວລອງໃໝ່.'],
   noCamSub:['Open this app in Chrome (Android) or Safari (iPhone).','ກະລຸນາເປີດແອັບໃນ Chrome (Android) ຫຼື Safari (iPhone).'],
   allowCam:['Allow camera access for this site in your browser settings, then try again.','ກະລຸນາອະນຸຍາດໃຫ້ໃຊ້ກ້ອງ ໃນການຕັ້ງຄ່າບຣາວເຊີ ແລ້ວລອງໃໝ່.'],
   noQr:['No QR code found. Try again at the entrance screen.','ບໍ່ພົບ QR. ກະລຸນາລອງໃໝ່ທີ່ໜ້າຈໍປະຕູທາງເຂົ້າ.'],
@@ -228,6 +231,7 @@ const TXT = {
   noScanDay:['No scan this day','ບໍ່ໄດ້ສະແກນມື້ນີ້'], flagged:['Flagged','ມີບັນຫາ'], waiting:['Waiting requests','ຄຳຮ້ອງລໍຖ້າ']
 };
 const ERR_LO = {
+  'Location is off. Turn on location (GPS) and allow it for this app.':'ສະຖານທີ່ (GPS) ປິດຢູ່. ກະລຸນາເປີດ GPS ແລະ ອະນຸຍາດໃຫ້ແອັບນີ້.',
   'Wrong staff ID or PIN.':'ລະຫັດພະນັກງານ ຫຼື PIN ບໍ່ຖືກຕ້ອງ.',
   'Your account is locked to another phone. Ask HR to reset it.':'ບັນຊີຂອງທ່ານຖືກລັອກໄວ້ກັບໂທລະສັບເຄື່ອງອື່ນ. ກະລຸນາແຈ້ງ HR.',
   'This staff ID is not active. Ask HR.':'ລະຫັດພະນັກງານນີ້ຖືກປິດໃຊ້ງານ. ກະລຸນາແຈ້ງ HR.',
@@ -252,7 +256,7 @@ const ERR_LO = {
 };
 let LANG = (() => { try{ return localStorage.getItem('hrlta_lang') || 'lo' }catch(e){ return 'lo' } })();
 const t = k => (TXT[k] || [k, k])[LANG === 'lo' ? 1 : 0];
-const tErr = m => LANG === 'lo' ? (ERR_LO[m] || (m.startsWith('Already decided by ') ? 'ມີຄົນຕັດສິນແລ້ວ: ' + m.slice(19) : m)) : m;
+const tErr = m => LANG === 'lo' ? (ERR_LO[m] || (m.startsWith('Already decided by ') ? 'ມີຄົນຕັດສິນແລ້ວ: ' + m.slice(19) : (m.startsWith('You are not at the workplace') ? 'ທ່ານບໍ່ໄດ້ຢູ່ບ່ອນເຮັດວຽກ' + m.slice(28) : m))) : m;
 function langBtn(){ return `<button id="lang">${LANG === 'lo' ? 'EN' : 'ລາວ'}</button>` }
 function bindLang(redraw){ const b = $('#lang'); if (b) b.onclick = () => { LANG = LANG === 'lo' ? 'en' : 'lo'; store.set('hrlta_lang', LANG); document.documentElement.lang = LANG; redraw(); }; }
 
@@ -471,6 +475,10 @@ async function startPunch(type){
   $('#ov').classList.add('on'); showStage(true); $('#count').textContent = ''; $('#ovClose').textContent = t('cancel');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return showResult(false, t('noCam'), t('noCamSub'));
   try{
+    showStage(false); ov(word, ''); $('#result').innerHTML = `<div class="big">📍</div><div class="t">${t('gettingLoc')}</div>`;
+    const pos = await getLocation();
+    if (cancelled) return;
+    showStage(true);
     ov(word, t('scanQr'));
     $('#frame').className = 'frame';
     await openCam('environment');
@@ -481,7 +489,7 @@ async function startPunch(type){
     if (cancelled) return;
     showStage(false); $('#result').innerHTML = `<div class="big">⏳</div><div class="t">${t('sending')}</div>`;
     $('#ovClose').textContent = t('wait');
-    const r = await api('punch', { ...staffCred(), type, qr });
+    const r = await api('punch', { ...staffCred(), type, qr, lat: pos.lat, lng: pos.lng, acc: pos.acc });
     me.history = r.history; store.set('hrlta_user', JSON.stringify(me));
     showResult(true, `${word} ${r.time}`, `${r.date} · ${me.name}`);
     renderHome();
@@ -491,6 +499,15 @@ async function startPunch(type){
     const m = e && e.name === 'NotAllowedError' ? t('allowCam') : (e.message || String(e));
     showResult(false, t('notSaved'), m);
   }
+}
+function getLocation(){
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error(t('locOff')));
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
+      e => reject(new Error(e.code === 1 ? t('locDenied') : t('locOff'))),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  });
 }
 async function startRef(){
   cancelled = false;
