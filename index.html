@@ -101,6 +101,11 @@
   .scan .info b{font-size:15px}.scan .info div{font-size:13px;color:var(--mute)}
   .thumb{width:58px;height:58px;border-radius:10px;object-fit:cover;background:#e9edf2;display:block;cursor:pointer;flex:none}
   .thumb.none{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--mute);cursor:default}
+  .pair{display:flex;gap:6px;flex:none}
+  .pair figure{margin:0;text-align:center}
+  .pair figcaption{font-size:10px;color:var(--mute);margin-top:2px}
+  .refcard{background:#FFF8E6;border:1px solid #F0D9A0;border-radius:14px;padding:16px;margin-bottom:14px;text-align:center}
+  .refcard b{display:block;font-size:17px}.refcard p{margin:6px 0 0;font-size:14px;color:var(--mute)}
   .acts{display:flex;gap:6px;flex:none}
   .acts button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600}
   .acts .y{color:var(--ok)}.acts .n{color:var(--bad)}
@@ -119,7 +124,7 @@
   .copy{display:flex;gap:8px}.copy input{font-size:13px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:820px){.cols{grid-template-columns:1fr}}
-  @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.hide-sm{display:none}.scan{flex-wrap:wrap}.scan .acts{width:100%;padding-left:70px}.scan .acts button{flex:1}}
+  @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.hide-sm{display:none}.scan{flex-wrap:wrap}.scan .acts{width:100%;padding-left:0}.scan .acts button{flex:1}}
 </style>
 </head>
 <body>
@@ -207,6 +212,13 @@ const TXT = {
   by:['by','ໂດຍ'], day:['Day','ມື້'], refresh:['Refresh','ໂຫຼດໃໝ່'],
   notChecked:['not checked','ຍັງບໍ່ກວດ'], noPhoto:['no photo','ບໍ່ມີຮູບ'],
   verifyHint:['Tap a selfie to enlarge. Mark ✓ OK if it is the right person, ⚑ Flag if not.','ແຕະຮູບເພື່ອຂະຫຍາຍ. ກົດ ✓ ຖືກຕ້ອງ ຖ້າແມ່ນຄົນດຽວກັນ, ⚑ ມີບັນຫາ ຖ້າບໍ່ແມ່ນ.'],
+  refTitle:['Profile photo needed','ຕ້ອງຖ່າຍຮູບໂປຣໄຟລ໌'],
+  refSub:['Take one clear photo of your face (no hat, no mask). Supervisors use it to check your selfies.','ຖ່າຍຮູບໜ້າໃຫ້ຊັດເຈນ 1 ຮູບ (ບໍ່ໃສ່ໝວກ, ບໍ່ໃສ່ຜ້າອັດປາກ). ຫົວໜ້າຈະໃຊ້ກວດເຊວຟີຂອງທ່ານ.'],
+  refBtn:['Take profile photo','ຖ່າຍຮູບໂປຣໄຟລ໌'],
+  refStep:['PROFILE PHOTO','ຮູບໂປຣໄຟລ໌'],
+  refSaved:['Profile photo saved','ບັນທຶກຮູບໂປຣໄຟລ໌ແລ້ວ'],
+  refSavedSub:['You can now check in and out.','ຕອນນີ້ທ່ານສາມາດເຂົ້າວຽກ ແລະ ອອກວຽກໄດ້ແລ້ວ.'],
+  refLbl:['Profile','ໂປຣໄຟລ໌'], todayLbl:['Today','ມື້ນີ້'], noRef:['no profile','ບໍ່ມີໂປຣໄຟລ໌'],
   kiosk1:['Scan to check in / check out','ສະແກນເພື່ອເຂົ້າວຽກ / ອອກວຽກ'],
   kiosk2:['code changes every 30 seconds','ລະຫັດປ່ຽນທຸກໆ 30 ວິນາທີ'],
   checkedIn:['Checked in','ເຂົ້າວຽກແລ້ວ'], checkedOut:['Checked out','ອອກວຽກແລ້ວ'],
@@ -229,6 +241,8 @@ const ERR_LO = {
   'You cannot approve your own request.':'ບໍ່ສາມາດອະນຸມັດຄຳຮ້ອງຂອງຕົນເອງໄດ້.',
   'You cannot verify your own scan.':'ບໍ່ສາມາດກວດສອບການສະແກນຂອງຕົນເອງໄດ້.',
   'Admin only.':'ສະເພາະແອດມິນເທົ່ານັ້ນ.',
+  'Take your profile photo first.':'ກະລຸນາຖ່າຍຮູບໂປຣໄຟລ໌ກ່ອນ.',
+  'Profile photo already saved. Ask HR to reset it.':'ມີຮູບໂປຣໄຟລ໌ແລ້ວ. ກະລຸນາແຈ້ງ HR ເພື່ອປ່ຽນ.',
   'Supervisors only.':'ສະເພາະຫົວໜ້າເທົ່ານັ້ນ.', 'Staff ID not found.':'ບໍ່ພົບລະຫັດພະນັກງານ.',
   'Phone not recognised. Reload the app.':'ບໍ່ຮູ້ຈັກໂທລະສັບ. ກະລຸນາເປີດແອັບໃໝ່.',
   'Server error. Please try again.':'ເຊີບເວີຜິດພາດ. ກະລຸນາລອງໃໝ່.'
@@ -331,7 +345,7 @@ function renderLogin(msg = ''){
     $('#go').disabled = true; $('#err').textContent = '';
     try{
       const r = await api('login', { id, pin, device: deviceId() });
-      me = { id: r.id, pin, name: r.name, position: r.position, role: r.role, history: r.history, requests: r.requests };
+      me = { id: r.id, pin, name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests };
       store.set('hrlta_user', JSON.stringify(me));
       show('home');
     }catch(e){ $('#err').textContent = e.message; $('#go').disabled = false; }
@@ -352,6 +366,7 @@ function renderHome(){
         <div class="clock" id="clock">--:--</div>
         <div class="date" id="date"></div>
       </div>
+      ${me.hasRef === false ? `<div class="refcard"><b>📷 ${t('refTitle')}</b><p>${t('refSub')}</p><button class="btn" id="refBtn">${t('refBtn')}</button></div>` : ''}
       <div class="punch">
         <button class="in" data-t="IN">${t('checkIn')}<small>${t('startShift')}</small></button>
         <button class="out" data-t="OUT">${t('checkOut')}<small>${t('endShift')}</small></button>
@@ -367,7 +382,8 @@ function renderHome(){
     </main>`;
   bindLang(renderHome);
   $('#logout').onclick = () => { if (confirm(t('logoutQ'))) { store.del('hrlta_user'); location.reload(); } };
-  document.querySelectorAll('.punch button').forEach(b => b.onclick = () => startPunch(b.dataset.t));
+  document.querySelectorAll('.punch button').forEach(b => b.onclick = () => me.hasRef === false ? startRef() : startPunch(b.dataset.t));
+  if ($('#refBtn')) $('#refBtn').onclick = startRef;
   $('#forgotBtn').onclick = () => show('forgot');
   if ($('#supBtn')) $('#supBtn').onclick = () => show('review');
   clearInterval(clockTimer);
@@ -421,7 +437,7 @@ function renderForgot(){
 async function refresh(){
   try{
     const r = await api('login', staffCred());
-    Object.assign(me, { name: r.name, position: r.position, role: r.role, history: r.history, requests: r.requests });
+    Object.assign(me, { name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests });
     store.set('hrlta_user', JSON.stringify(me)); if (view === 'home') renderHome();
   }catch(e){
     if (/PIN|locked|active|ລະຫັດ|ລັອກ/i.test(e.message)) { store.del('hrlta_user'); renderLogin(e.message); }
@@ -481,6 +497,31 @@ async function startPunch(type){
     stopCam();
     const m = e && e.name === 'NotAllowedError' ? t('allowCam') : (e.message || String(e));
     showResult(false, t('notSaved'), m);
+  }
+}
+async function startRef(){
+  cancelled = false;
+  $('#ov').classList.add('on'); showStage(true); $('#count').textContent = ''; $('#ovClose').textContent = t('cancel');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return showResult(false, t('noCam'), t('noCamSub'));
+  try{
+    ov(t('refStep'), t('selfie'));
+    $('#frame').className = 'frame face';
+    await openCam('user');
+    for (let i = 3; i > 0; i--) { if (cancelled) return; $('#count').textContent = i; await sleep(800); }
+    $('#count').textContent = '';
+    const photo = snap();
+    stopCam();
+    if (cancelled) return;
+    showStage(false); $('#result').innerHTML = `<div class="big">⏳</div><div class="t">${t('sending')}</div>`;
+    $('#ovClose').textContent = t('wait');
+    await api('setRef', { ...staffCred(), photo });
+    me.hasRef = true; store.set('hrlta_user', JSON.stringify(me));
+    showResult(true, t('refSaved'), t('refSavedSub'));
+    renderHome();
+  }catch(e){
+    if (cancelled) return;
+    stopCam();
+    showResult(false, t('notSaved'), e && e.name === 'NotAllowedError' ? t('allowCam') : (e.message || String(e)));
   }
 }
 function showResult(ok, title, sub){
@@ -591,7 +632,10 @@ function renderReview(){
             <div class="muted" style="margin-bottom:6px">${t('verifyHint')}</div>
             ${rows.map(r => `
               <div class="scan ${esc(r.status)}">
-                ${r.photo ? `<img class="thumb" data-photo="${esc(r.photo)}" alt="">` : `<div class="thumb none">${t('noPhoto')}</div>`}
+                <div class="pair">
+                  <figure>${r.ref ? `<img class="thumb" data-photo="${esc(r.ref)}" alt="">` : `<div class="thumb none">${t('noRef')}</div>`}<figcaption>${t('refLbl')}</figcaption></figure>
+                  <figure>${r.photo ? `<img class="thumb" data-photo="${esc(r.photo)}" alt="">` : `<div class="thumb none">${t('noPhoto')}</div>`}<figcaption>${t('todayLbl')}</figcaption></figure>
+                </div>
                 <div class="info">
                   <b>${esc(r.time.slice(0,5))} · ${esc(r.name)}</b> <span class="tag ${esc(r.type)}">${t('w' + r.type)}</span>
                   <div>${esc(r.id)}${r.source === 'MANUAL' ? ` · <span class="pill MANUAL">${t('manual')}</span>` : ''} · ${r.status ? `<span class="pill ${esc(r.status)}">${r.status === 'OK' ? 'OK' : t('flagged')}</span> ${t('by')} ${esc(r.by)}${r.status === 'FLAG' && r.note ? ' — ' + esc(r.note) : ''}` : t('notChecked')}</div>
@@ -626,8 +670,8 @@ function renderReview(){
       </div>
       <div class="card">
         <h3>Staff phones & roles</h3>
-        <div class="muted" style="margin-bottom:8px">To move someone to a new phone, clear their DeviceID cell in the Staff sheet. Set Role to SUPERVISOR for supervisors.</div>
-        <table><tbody>${d.staff.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td class="hide-sm">${esc(s.position)}</td><td>${s.role === 'SUPERVISOR' ? '<span class="pill PENDING">SUPERVISOR</span>' : ''}</td><td class="muted">${s.device === 'locked' ? '📱 phone set' : 'not logged in yet'}</td></tr>`).join('')}</tbody></table>
+        <div class="muted" style="margin-bottom:8px">To move someone to a new phone, clear their DeviceID cell in the Staff sheet. To retake a profile photo, clear their ProfilePhoto cell.</div>
+        <table><tbody>${d.staff.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td class="hide-sm">${esc(s.position)}</td><td>${s.role === 'SUPERVISOR' ? '<span class="pill PENDING">SUPERVISOR</span>' : ''}</td><td class="muted">${s.device === 'locked' ? '📱 phone set' : 'not logged in yet'}</td><td class="muted">${s.ref ? '📷 profile set' : 'no profile photo'}</td></tr>`).join('')}</tbody></table>
       </div>` : ''}
     </main>`;
 
