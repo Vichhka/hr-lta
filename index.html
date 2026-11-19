@@ -129,6 +129,7 @@
   .lvh{font-size:11px;color:var(--mute);text-align:center}
   .lvd{border:1px solid var(--line);background:#fff;border-radius:8px;min-height:56px;padding:4px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:12px;color:var(--ink);text-align:left}
   .lvd.pk{min-height:42px;align-items:center;justify-content:center;font-size:15px;cursor:pointer}.lvd.pk.sel{background:var(--navy);color:#fff;outline:none}.lvd.pk:disabled{opacity:.3}.pkm{display:flex;align-items:center;justify-content:space-between;margin:6px 0}.pkm button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:16px}.pkchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pkchips span{background:#E8EEF8;border-radius:12px;padding:3px 10px;font-size:13px}
+  .lvd.hol:not(.sel){background:#FDECEC;border-color:#F3B8B8;color:#C83A3A}
   .lvd.sel{outline:2px solid var(--navy)}.lvd.now{background:#FFF8E6}.lvd.empty{visibility:hidden}
   .lvbars{display:flex;flex-wrap:wrap;gap:2px}
   .lb{display:block;width:11px;height:11px;border-radius:50%;background:var(--c);border:2px solid var(--c)}
@@ -781,6 +782,19 @@ $('#bigImg').onclick = () => $('#bigImg').classList.remove('on');
 
 /* ======================= LEAVE REQUESTS ======================= */
 const LTYPES = ['AL', 'SL', 'UL', 'PH', 'OFF'];
+/* Lao public holidays shown on the calendars (edit here when the Prime Minister's Office announces changes) */
+const LAO_HOL = {
+  '2026-11-24':['That Luang Festival (Vientiane)','ບຸນທາດຫຼວງ (ນະຄອນຫຼວງ)'],
+  '2026-12-02':['Lao National Day','ວັນຊາດ ສປປ ລາວ'],
+  '2027-01-01':['New Year\'s Day','ວັນປີໃໝ່ສາກົນ'],
+  '2027-03-08':['International Women\'s Day','ວັນແມ່ຍິງສາກົນ'],
+  '2027-04-14':['Lao New Year (Pi Mai)','ບຸນປີໃໝ່ລາວ'], '2027-04-15':['Lao New Year (Pi Mai)','ບຸນປີໃໝ່ລາວ'], '2027-04-16':['Lao New Year (Pi Mai)','ບຸນປີໃໝ່ລາວ'],
+  '2027-05-01':['International Labour Day','ວັນກຳມະກອນສາກົນ'],
+  '2027-07-20':['Lao Women\'s Union Day','ວັນສະຫະພັນແມ່ຍິງລາວ'],
+  '2027-12-02':['Lao National Day','ວັນຊາດ ສປປ ລາວ']
+};
+const holList = month => Object.keys(LAO_HOL).filter(d => d.startsWith(month)).sort()
+  .map(d => `<div style="color:#C83A3A">● ${esc(fmtDay(d))} – ${esc(LAO_HOL[d][LANG === 'lo' ? 1 : 0])}</div>`).join('');
 const SICK_CERT_DAYS = 3;
 const dayCount = (a, b) => Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000) + 1;
 function datesTxt(ds){
@@ -819,6 +833,7 @@ function renderLeave(){
         <div class="seg"><label><input type="radio" name="pMode" value="one" checked><span>${t('modeOne')}</span></label><label><input type="radio" name="pMode" value="range"><span>${t('modeRange')}</span></label></div>
         <div class="pkm"><button id="pkPrev">‹</button><b id="pkTitle"></b><button id="pkNext">›</button></div>
         <div id="pkGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
+        <div class="muted" id="pkHol" style="margin-top:6px"></div>
         <div class="pkchips" id="pkChips"></div>
         <div class="muted" id="lDays" style="margin-top:6px"></div>
         <label>${t('reason')}</label><textarea id="lReason" placeholder="${t('reasonPh')}"></textarea>
@@ -855,9 +870,9 @@ function renderLeave(){
     let c = wk.map(w => `<div class="lvh">${w}</div>`).join('') + '<div class="lvd empty"></div>'.repeat(off);
     for (let i = 1; i <= nd; i++){
       const day = `${pm}-${String(i).padStart(2, '0')}`, ok = day >= minD && day <= maxD;
-      c += `<button class="lvd pk ${sel.includes(day) ? 'sel' : ''} ${day === d0 ? 'now' : ''}" data-pk="${day}" ${ok ? '' : 'disabled'}>${i}</button>`;
+      c += `<button class="lvd pk ${sel.includes(day) ? 'sel' : ''} ${day === d0 ? 'now' : ''} ${LAO_HOL[day] ? 'hol' : ''}" data-pk="${day}" ${LAO_HOL[day] ? `title="${esc(LAO_HOL[day][LANG === 'lo' ? 1 : 0])}"` : ''} ${ok ? '' : 'disabled'}>${i}</button>`;
     }
-    $('#pkGrid').innerHTML = c;
+    $('#pkGrid').innerHTML = c; $('#pkHol').innerHTML = holList(pm);
     $('#pkGrid').querySelectorAll('[data-pk]').forEach(b => b.onclick = () => {
       const day = b.dataset.pk;
       if (radio('pMode') === 'range'){
@@ -920,7 +935,7 @@ function renderLeaveCard(){
   let cells = wk.map(w => `<div class="lvh">${w}</div>`).join('') + '<div class="lvd empty"></div>'.repeat(off);
   for (let i = 1; i <= nd; i++){
     const day = `${lv.month}-${String(i).padStart(2, '0')}`, ls = leavesOn(day);
-    cells += `<button class="lvd ${day === lv.day ? 'sel' : ''} ${day === today() ? 'now' : ''}" data-lday="${day}"><b>${i}</b><span class="lvbars">${ls.slice(0, 6).map(l => `<i class="lb lt-${esc(l.type)} ${l.status === 'PENDING' ? 'pend' : ''}"></i>`).join('')}${ls.length > 6 ? `<small>+${ls.length - 6}</small>` : ''}</span></button>`;
+    cells += `<button class="lvd ${day === lv.day ? 'sel' : ''} ${day === today() ? 'now' : ''} ${LAO_HOL[day] ? 'hol' : ''}" data-lday="${day}"><b>${i}</b><span class="lvbars">${ls.slice(0, 6).map(l => `<i class="lb lt-${esc(l.type)} ${l.status === 'PENDING' ? 'pend' : ''}"></i>`).join('')}${ls.length > 6 ? `<small>+${ls.length - 6}</small>` : ''}</span></button>`;
   }
   const list = all.filter(l => lv.type === 'ALL' || l.type === lv.type);
   const sortL = (a, b) => (a.status === 'PENDING' ? 0 : 1) - (b.status === 'PENDING' ? 0 : 1) || a.from.localeCompare(b.from);
@@ -932,6 +947,7 @@ function renderLeaveCard(){
     <div class="lvmonth"><button data-lmon="-1">‹</button><b>${esc(monthName)}</b><button data-lmon="1">›</button></div>
     <div class="lvcal">${cells}</div>
     <div class="muted" style="margin-top:6px">${t('legendL')}</div>
+    <div class="muted" style="margin-top:4px">${holList(lv.month)}</div>
     ${lv.day ? `<div class="lvgrp"><h4>${t('onLeaveDay')} · ${esc(fmtDay(lv.day))}</h4>${leavesOn(lv.day).map(l => `<div class="lvitem lt-${esc(l.type)}"><div class="h"><b>${esc(l.name)}</b><span><span class="ltag">${t('l' + l.type)}</span> <span class="pill ${esc(l.status)}">${t(l.status)}</span></span></div></div>`).join('') || `<div class="muted">${t('nobodyDay')}</div>`}</div>` : ''}
     ${groups.map(g => `<div class="lvgrp lt-${g.k}"><h4><span class="ltag">${t('l' + g.k)}</span> ${g.items.length}</h4>${g.items.map(l => leaveItemHtml(l, true)).join('')}</div>`).join('') || `<div class="muted" style="margin-top:10px">${t('noLeave')}</div>`}
     <button class="btn ghost" id="lvCsv" style="margin-top:12px">${t('dlLeave')}</button>
