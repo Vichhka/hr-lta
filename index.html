@@ -128,7 +128,7 @@
   .lvcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
   .lvh{font-size:11px;color:var(--mute);text-align:center}
   .lvd{border:1px solid var(--line);background:#fff;border-radius:8px;min-height:56px;padding:4px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:12px;color:var(--ink);text-align:left}
-  .lvd.pk{min-height:42px;align-items:center;justify-content:center;font-size:15px;cursor:pointer}.lvd.pk.sel{background:var(--navy);color:#fff;outline:none}.lvd.pk:disabled{opacity:.3}.pkm{display:flex;align-items:center;justify-content:space-between;margin:6px 0}.pkm button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:16px}.pkchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pkchips span{background:#E8EEF8;border-radius:12px;padding:3px 10px;font-size:13px}
+  .lvd.pk{min-height:42px;align-items:center;justify-content:center;font-size:15px;cursor:pointer}.lvd.pk.sel{background:var(--navy);color:#fff;outline:none}.lvd.pk:disabled{opacity:.3}.pkm{display:flex;align-items:center;justify-content:space-between;margin:6px 0}.pkm button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:16px}.lvd.pk.has::after{content:'';width:5px;height:5px;border-radius:50%;background:#E0457B;display:block;margin-top:1px}.pkchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pkchips span{background:#E8EEF8;border-radius:12px;padding:3px 10px;font-size:13px}
   .lvd.hol:not(.sel){background:#FDECEC;border-color:#F3B8B8;color:#C83A3A}
   .lvd.sel{outline:2px solid var(--navy)}.lvd.now{background:#FFF8E6}.lvd.empty{visibility:hidden}
   .lvbars{display:flex;flex-wrap:wrap;gap:2px}
@@ -258,6 +258,7 @@ const TXT = {
   pickDays:['Tap the days you want off','ແຕະເລືອກມື້ທີ່ຕ້ອງການພັກ'], modeOne:['Single days','ເລືອກທີລະມື້'], modeRange:['From – to','ແຕ່ວັນ – ຮອດວັນ'], picked:['Selected','ເລືອກແລ້ວ'], pickNone:['No day selected yet','ຍັງບໍ່ໄດ້ເລືອກມື້'], pickErr:['Please select at least one day.','ກະລຸນາເລືອກຢ່າງໜ້ອຍ 1 ມື້.'], fromD:['From','ແຕ່ວັນທີ'], toD:['To','ເຖິງວັນທີ'], daysN:['day(s)','ມື້'],
   certNeed:['Sick leave of 3 days or more needs a medical certificate.','ລາປ່ວຍ 3 ມື້ຂຶ້ນໄປ ຕ້ອງມີໃບຢັ້ງຢືນແພດ.'],
   certBtn:['Attach photo of medical certificate','ແນບຮູບໃບຢັ້ງຢືນແພດ'], certOk:['Photo attached ✓ (tap to change)','ແນບຮູບແລ້ວ ✓ (ແຕະເພື່ອປ່ຽນ)'],
+  whoLeave:['Who is on leave this month','ຜູ້ທີ່ລາພັກເດືອນນີ້'],
   leaveSend:['Send to admin','ສົ່ງໃຫ້ແອດມິນ'], leaveSent:['Request sent. Waiting for admin.','ສົ່ງຄຳຂໍແລ້ວ. ລໍຖ້າແອດມິນອະນຸມັດ.'],
   myLeaves:['My leave requests','ຄຳຂໍລາພັກຂອງຂ້ອຍ'], cancelL:['Cancel request','ຍົກເລີກຄຳຂໍ'], cancelLQ:['Cancel this leave request?','ຍົກເລີກຄຳຂໍລາພັກນີ້ບໍ?'], CANCELLED:['Cancelled','ຍົກເລີກແລ້ວ'],
   leaveAdm:['Leave requests','ຄຳຂໍລາພັກ'], allT:['All','ທັງໝົດ'], noLeave:['No leave requests.','ບໍ່ມີຄຳຂໍລາພັກ.'],
@@ -394,7 +395,7 @@ function renderLogin(msg = ''){
     $('#go').disabled = true; $('#err').textContent = '';
     try{
       const r = await api('login', { id, pin, device: deviceId() });
-      me = { id: r.id, pin, name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests, leaves: r.leaves || [] };
+      me = { id: r.id, pin, name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests, leaves: r.leaves || [], teamLeaves: r.teamLeaves || [] };
       store.set('hrlta_user', JSON.stringify(me));
       show('home');
     }catch(e){ $('#err').textContent = e.message; $('#go').disabled = false; }
@@ -484,7 +485,7 @@ function renderForgot(){
 async function refresh(){
   try{
     const r = await api('login', staffCred());
-    Object.assign(me, { name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests, leaves: r.leaves || [] });
+    Object.assign(me, { name: r.name, position: r.position, role: r.role, hasRef: r.hasRef, history: r.history, requests: r.requests, leaves: r.leaves || [], teamLeaves: r.teamLeaves || [] });
     store.set('hrlta_user', JSON.stringify(me)); if (view === 'home') renderHome();
   }catch(e){
     if (/PIN|locked|active|ລະຫັດ|ລັອກ/i.test(e.message)) { store.del('hrlta_user'); renderLogin(e.message); }
@@ -833,6 +834,7 @@ function renderLeave(){
         <div class="seg"><label><input type="radio" name="pMode" value="one" checked><span>${t('modeOne')}</span></label><label><input type="radio" name="pMode" value="range"><span>${t('modeRange')}</span></label></div>
         <div class="pkm"><button id="pkPrev">‹</button><b id="pkTitle"></b><button id="pkNext">›</button></div>
         <div id="pkGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
+        <div id="pkTeam" class="muted" style="margin-top:8px"></div>
         <div class="muted" id="pkHol" style="margin-top:6px"></div>
         <div class="pkchips" id="pkChips"></div>
         <div class="muted" id="lDays" style="margin-top:6px"></div>
@@ -867,12 +869,16 @@ function renderLeave(){
     const off = (new Date(y, m - 1, 1).getDay() + 6) % 7, nd = new Date(y, m, 0).getDate();
     const wk = LANG === 'lo' ? ['ຈ','ອ','ພ','ພຫ','ສ','ສ','ອາ'] : ['Mo','Tu','We','Th','Fr','Sa','Su'];
     $('#pkTitle').textContent = new Date(y, m - 1, 1).toLocaleDateString(LANG === 'lo' ? 'lo-LA' : 'en-GB', { month: 'long', year: 'numeric' });
+    const tm = {};
+    (me.teamLeaves || []).forEach(l => l.dates.forEach(d => { if (d.startsWith(pm)) (tm[d] = tm[d] || []).push(l); }));
     let c = wk.map(w => `<div class="lvh">${w}</div>`).join('') + '<div class="lvd empty"></div>'.repeat(off);
     for (let i = 1; i <= nd; i++){
       const day = `${pm}-${String(i).padStart(2, '0')}`, ok = day >= minD && day <= maxD;
-      c += `<button class="lvd pk ${sel.includes(day) ? 'sel' : ''} ${day === d0 ? 'now' : ''} ${LAO_HOL[day] ? 'hol' : ''}" data-pk="${day}" ${LAO_HOL[day] ? `title="${esc(LAO_HOL[day][LANG === 'lo' ? 1 : 0])}"` : ''} ${ok ? '' : 'disabled'}>${i}</button>`;
+      c += `<button class="lvd pk ${tm[day] ? 'has' : ''} ${sel.includes(day) ? 'sel' : ''} ${day === d0 ? 'now' : ''} ${LAO_HOL[day] ? 'hol' : ''}" data-pk="${day}" ${LAO_HOL[day] ? `title="${esc(LAO_HOL[day][LANG === 'lo' ? 1 : 0])}"` : ''} ${ok ? '' : 'disabled'}>${i}</button>`;
     }
     $('#pkGrid').innerHTML = c; $('#pkHol').innerHTML = holList(pm);
+    const tdays = Object.keys(tm).sort();
+    $('#pkTeam').innerHTML = tdays.length ? `<div style="font-weight:700;color:var(--ink);margin-bottom:4px">${t('whoLeave')}</div>` + tdays.map(d => `<div style="margin-bottom:3px"><b style="color:#E0457B">${esc(fmtDay(d))}</b> – ${tm[d].map(l => `${esc(l.name)} <span class="ltag lt-${esc(l.type)}">${t('l' + l.type)}</span>${l.status === 'PENDING' ? ' <small>(' + t('PENDING') + ')</small>' : ''}`).join(', ')}</div>`).join('') : '';
     $('#pkGrid').querySelectorAll('[data-pk]').forEach(b => b.onclick = () => {
       const day = b.dataset.pk;
       if (radio('pMode') === 'range'){
@@ -901,13 +907,13 @@ function renderLeave(){
     try{
       if (!sel.length) throw new Error(t('pickErr'));
       const r = await api('leave', { ...staffCred(), type: radio('lType'), dates: sel, reason: $('#lReason').value, cert });
-      me.leaves = r.leaves; store.set('hrlta_user', JSON.stringify(me));
+      me.leaves = r.leaves; if (r.teamLeaves) me.teamLeaves = r.teamLeaves; store.set('hrlta_user', JSON.stringify(me));
       renderLeave(); const m = document.createElement('div'); m.className = 'okmsg'; m.textContent = t('leaveSent'); $('#lErr').after(m);
     }catch(e){ $('#lErr').textContent = e.message; b.disabled = false; }
   };
   document.querySelectorAll('[data-lcancel]').forEach(b => b.onclick = async () => {
     if (!confirm(t('cancelLQ'))) return; b.disabled = true;
-    try{ const r = await api('leaveCancel', { ...staffCred(), leaveId: b.dataset.lcancel }); me.leaves = r.leaves; store.set('hrlta_user', JSON.stringify(me)); renderLeave(); }
+    try{ const r = await api('leaveCancel', { ...staffCred(), leaveId: b.dataset.lcancel }); me.leaves = r.leaves; if (r.teamLeaves) me.teamLeaves = r.teamLeaves; store.set('hrlta_user', JSON.stringify(me)); renderLeave(); }
     catch(e){ alert(e.message); b.disabled = false; }
   });
 }
