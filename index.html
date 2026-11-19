@@ -128,6 +128,7 @@
   .lvcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
   .lvh{font-size:11px;color:var(--mute);text-align:center}
   .lvd{border:1px solid var(--line);background:#fff;border-radius:8px;min-height:56px;padding:4px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:12px;color:var(--ink);text-align:left}
+  .lvd.pk{min-height:42px;align-items:center;justify-content:center;font-size:15px;cursor:pointer}.lvd.pk.sel{background:var(--navy);color:#fff;outline:none}.lvd.pk:disabled{opacity:.3}.pkm{display:flex;align-items:center;justify-content:space-between;margin:6px 0}.pkm button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:16px}.pkchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pkchips span{background:#E8EEF8;border-radius:12px;padding:3px 10px;font-size:13px}
   .lvd.sel{outline:2px solid var(--navy)}.lvd.now{background:#FFF8E6}.lvd.empty{visibility:hidden}
   .lvbars{display:flex;flex-wrap:wrap;gap:2px}
   .lb{display:block;width:11px;height:11px;border-radius:50%;background:var(--c);border:2px solid var(--c)}
@@ -253,7 +254,7 @@ const TXT = {
   leaveBtn:['Leave request','ຂໍລາພັກ'], leaveSub:['Annual, sick, unpaid, public holiday','ລາພັກປະຈຳປີ, ລາປ່ວຍ, ລາບໍ່ຮັບເງິນເດືອນ, ວັນພັກ'],
   leaveTitle:['Leave request','ຂໍລາພັກ'], leaveType:['Leave type','ປະເພດການລາ'],
   lAL:['Annual leave','ລາພັກປະຈຳປີ'], lSL:['Sick leave','ລາປ່ວຍ'], lUL:['Unpaid leave','ລາບໍ່ຮັບເງິນເດືອນ'], lPH:['Public holiday','ວັນພັກສາທາລະນະ'], lOFF:['Other / OFF swap','ອື່ນໆ / ປ່ຽນວັນ OFF'],
-  fromD:['From','ແຕ່ວັນທີ'], toD:['To','ເຖິງວັນທີ'], daysN:['day(s)','ມື້'],
+  pickDays:['Tap the days you want off','ແຕະເລືອກມື້ທີ່ຕ້ອງການພັກ'], modeOne:['Single days','ເລືອກທີລະມື້'], modeRange:['From – to','ແຕ່ວັນ – ຮອດວັນ'], picked:['Selected','ເລືອກແລ້ວ'], pickNone:['No day selected yet','ຍັງບໍ່ໄດ້ເລືອກມື້'], pickErr:['Please select at least one day.','ກະລຸນາເລືອກຢ່າງໜ້ອຍ 1 ມື້.'], fromD:['From','ແຕ່ວັນທີ'], toD:['To','ເຖິງວັນທີ'], daysN:['day(s)','ມື້'],
   certNeed:['Sick leave of 3 days or more needs a medical certificate.','ລາປ່ວຍ 3 ມື້ຂຶ້ນໄປ ຕ້ອງມີໃບຢັ້ງຢືນແພດ.'],
   certBtn:['Attach photo of medical certificate','ແນບຮູບໃບຢັ້ງຢືນແພດ'], certOk:['Photo attached ✓ (tap to change)','ແນບຮູບແລ້ວ ✓ (ແຕະເພື່ອປ່ຽນ)'],
   leaveSend:['Send to admin','ສົ່ງໃຫ້ແອດມິນ'], leaveSent:['Request sent. Waiting for admin.','ສົ່ງຄຳຂໍແລ້ວ. ລໍຖ້າແອດມິນອະນຸມັດ.'],
@@ -782,7 +783,12 @@ $('#bigImg').onclick = () => $('#bigImg').classList.remove('on');
 const LTYPES = ['AL', 'SL', 'UL', 'PH', 'OFF'];
 const SICK_CERT_DAYS = 3;
 const dayCount = (a, b) => Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000) + 1;
-const rangeTxt = l => l.from === l.to ? fmtDay(l.from) : fmtDay(l.from) + ' → ' + fmtDay(l.to);
+function datesTxt(ds){
+  ds = (ds || []).slice().sort(); const out = []; let i = 0;
+  while (i < ds.length){ let j = i; while (j + 1 < ds.length && addDays(ds[j], 1) === ds[j + 1]) j++; out.push(j === i ? fmtDay(ds[i]) : fmtDay(ds[i]) + ' → ' + fmtDay(ds[j])); i = j + 1; }
+  return out.join(', ');
+}
+const rangeTxt = l => (l.dates && l.dates.length) ? datesTxt(l.dates) : (l.from === l.to ? fmtDay(l.from) : fmtDay(l.from) + ' → ' + fmtDay(l.to));
 function fileToJpeg(file, max = 1280){
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), im = new Image();
@@ -799,6 +805,8 @@ function fileToJpeg(file, max = 1280){
 
 function renderLeave(){
   const d0 = today(); let cert = '';
+  const minD = addDays(d0, -7), maxD = addDays(d0, 90);
+  let sel = [], pm = d0.slice(0, 7), anchor = '';
   const mine = me.leaves || [];
   app.innerHTML = `
     ${topbar(`<button id="backBtn">‹ ${t('back')}</button>`)}
@@ -807,8 +815,11 @@ function renderLeave(){
         <div class="who">${t('leaveTitle')}</div>
         <label>${t('leaveType')}</label>
         <div class="seg v">${LTYPES.map(k => `<label><input type="radio" name="lType" value="${k}"><span>${t('l' + k)}</span></label>`).join('')}</div>
-        <label>${t('fromD')}</label><input type="date" id="lFrom" value="${d0}" min="${addDays(d0, -7)}" max="${addDays(d0, 90)}">
-        <label>${t('toD')}</label><input type="date" id="lTo" value="${d0}" min="${addDays(d0, -7)}" max="${addDays(d0, 90)}">
+        <label>${t('pickDays')}</label>
+        <div class="seg"><label><input type="radio" name="pMode" value="one" checked><span>${t('modeOne')}</span></label><label><input type="radio" name="pMode" value="range"><span>${t('modeRange')}</span></label></div>
+        <div class="pkm"><button id="pkPrev">‹</button><b id="pkTitle"></b><button id="pkNext">›</button></div>
+        <div id="pkGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
+        <div class="pkchips" id="pkChips"></div>
         <div class="muted" id="lDays" style="margin-top:6px"></div>
         <label>${t('reason')}</label><textarea id="lReason" placeholder="${t('reasonPh')}"></textarea>
         <div id="certBox" style="display:none">
@@ -831,14 +842,40 @@ function renderLeave(){
   bindLang(renderLeave);
   $('#backBtn').onclick = () => show('home');
   const upd = () => {
-    const a = $('#lFrom').value, b = $('#lTo').value, ty = radio('lType');
-    const n = a && b && b >= a ? dayCount(a, b) : 0;
-    $('#lDays').textContent = n ? `${n} ${t('daysN')}` : '';
+    const n = sel.length, ty = radio('lType');
+    $('#lDays').textContent = n ? `${t('picked')}: ${n} ${t('daysN')}` : t('pickNone');
+    $('#pkChips').innerHTML = sel.map(x => `<span>${esc(fmtDay(x))}</span>`).join('');
     $('#certBox').style.display = (ty === 'SL' && n >= SICK_CERT_DAYS) ? '' : 'none';
   };
+  const drawCal = () => {
+    const [y, m] = pm.split('-').map(Number);
+    const off = (new Date(y, m - 1, 1).getDay() + 6) % 7, nd = new Date(y, m, 0).getDate();
+    const wk = LANG === 'lo' ? ['ຈ','ອ','ພ','ພຫ','ສ','ສ','ອາ'] : ['Mo','Tu','We','Th','Fr','Sa','Su'];
+    $('#pkTitle').textContent = new Date(y, m - 1, 1).toLocaleDateString(LANG === 'lo' ? 'lo-LA' : 'en-GB', { month: 'long', year: 'numeric' });
+    let c = wk.map(w => `<div class="lvh">${w}</div>`).join('') + '<div class="lvd empty"></div>'.repeat(off);
+    for (let i = 1; i <= nd; i++){
+      const day = `${pm}-${String(i).padStart(2, '0')}`, ok = day >= minD && day <= maxD;
+      c += `<button class="lvd pk ${sel.includes(day) ? 'sel' : ''} ${day === d0 ? 'now' : ''}" data-pk="${day}" ${ok ? '' : 'disabled'}>${i}</button>`;
+    }
+    $('#pkGrid').innerHTML = c;
+    $('#pkGrid').querySelectorAll('[data-pk]').forEach(b => b.onclick = () => {
+      const day = b.dataset.pk;
+      if (radio('pMode') === 'range'){
+        if (!anchor){ anchor = day; if (!sel.includes(day)) sel.push(day); }
+        else{
+          const a = anchor < day ? anchor : day, z = anchor < day ? day : anchor;
+          for (let x = a; x <= z; x = addDays(x, 1)) if (!sel.includes(x) && x >= minD && x <= maxD) sel.push(x);
+          anchor = '';
+        }
+      }else{ sel = sel.includes(day) ? sel.filter(x => x !== day) : sel.concat(day); anchor = ''; }
+      sel.sort(); drawCal(); upd();
+    });
+  };
+  $('#pkPrev').onclick = () => { pm = addDays(pm + '-01', -1).slice(0, 7); drawCal(); };
+  $('#pkNext').onclick = () => { pm = addDays(pm + '-01', 32).slice(0, 7); drawCal(); };
   document.querySelectorAll('input[name=lType]').forEach(i => i.onchange = upd);
-  $('#lFrom').onchange = () => { if ($('#lTo').value < $('#lFrom').value) $('#lTo').value = $('#lFrom').value; upd(); };
-  $('#lTo').onchange = upd; upd();
+  document.querySelectorAll('input[name=pMode]').forEach(i => i.onchange = () => { anchor = ''; });
+  drawCal(); upd();
   $('#certBtn').onclick = () => $('#lCert').click();
   $('#lCert').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
@@ -847,7 +884,8 @@ function renderLeave(){
   $('#lSend').onclick = async () => {
     const b = $('#lSend'); b.disabled = true; $('#lErr').textContent = '';
     try{
-      const r = await api('leave', { ...staffCred(), type: radio('lType'), from: $('#lFrom').value, to: $('#lTo').value, reason: $('#lReason').value, cert });
+      if (!sel.length) throw new Error(t('pickErr'));
+      const r = await api('leave', { ...staffCred(), type: radio('lType'), dates: sel, reason: $('#lReason').value, cert });
       me.leaves = r.leaves; store.set('hrlta_user', JSON.stringify(me));
       renderLeave(); const m = document.createElement('div'); m.className = 'okmsg'; m.textContent = t('leaveSent'); $('#lErr').after(m);
     }catch(e){ $('#lErr').textContent = e.message; b.disabled = false; }
@@ -862,7 +900,7 @@ function renderLeave(){
 /* ---- admin: calendar + list by type ---- */
 let lv = { month: today().slice(0, 7), type: 'ALL', day: '' };
 function leavesOn(day){
-  return (rv.data.leaves || []).filter(l => (l.status === 'PENDING' || l.status === 'APPROVED') && l.from <= day && l.to >= day && (lv.type === 'ALL' || l.type === lv.type));
+  return (rv.data.leaves || []).filter(l => (l.status === 'PENDING' || l.status === 'APPROVED') && (l.dates && l.dates.length ? l.dates.includes(day) : (l.from <= day && l.to >= day)) && (lv.type === 'ALL' || l.type === lv.type));
 }
 function leaveItemHtml(l, withActs){
   return `<div class="lvitem lt-${esc(l.type)}">
@@ -916,8 +954,8 @@ function renderLeaveCard(){
     $('#lvErr').textContent = '';
     try{
       const r = await api('exportLeaves', { ...rvCred(), from: lv.month + '-01', to: `${lv.month}-${String(nd).padStart(2, '0')}` });
-      const lines = [['LeaveID','StaffID','Name','Type','From','To','Days','Reason','Status','DecidedBy','DecidedAt','Certificate']]
-        .concat(r.rows.map(x => [x.id, x.staffId, x.name, x.type, x.from, x.to, x.days, x.reason, x.status, x.by, x.decidedAt, x.cert ? 'yes' : '']));
+      const lines = [['LeaveID','StaffID','Name','Type','From','To','Days','Dates','Reason','Status','DecidedBy','DecidedAt','Certificate']]
+        .concat(r.rows.map(x => [x.id, x.staffId, x.name, x.type, x.from, x.to, x.days, (x.dates || []).join(' '), x.reason, x.status, x.by, x.decidedAt, x.cert ? 'yes' : '']));
       const csv = '﻿' + lines.map(l => l.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
       a.download = `HR_LTA_leave_${lv.month}.csv`; a.click();
